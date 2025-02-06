@@ -130,20 +130,20 @@ knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
 \
 
 ## 1. Abstract
-This analysis studies the relationships among health indicators and diabetes status. It is based on a sample data from the Diabetes Health Indictors dataset (BRFSS 2015). We first explore data visualization methods to examine associations between different types of variables like diabetes status and BMI through histograms, box plots and density plots. We explored relations between numerical variables and categorical variables via box plots to illustrate how distributions of BMI vary across diabetes groups. We also looked at hight dimentional relations using faceted and interactive plots. Together, these provided preliminary insights into the patterns of relationships that exist in the dataset and help explain factors associated with diabetes.  
+This analysis studies the relationships among health indicators and diabetes status via exploratory data analysis visualizations. It is based on a sample data from the Diabetes Health Indictors dataset (BRFSS 2015). We first use visualization methods to look at individual variable distributions and then examine associations between different types of variables like diabetes status and BMI through histograms, box plots and density plots. We also explored relations between numerical variables and categorical variables via box plots to illustrate how distributions of BMI vary across diabetes groups. We also looked at high dimensional relations using faceted and interactive plots. Together, these provided preliminary insights into the patterns of relationships that exist in the dataset and help explain factors associated with diabetes for further analysis.  
 
 
 \
 
 ## 2. Introduction
-  In the USA, diabetes impacts over 37 million Americans and 1 in 5 people with diabetes do not know they have it according to the CDC. Over 38% of the US population have pre-diabetes - a condition that increases the risk of developing type 2 diabetes. It is one of the most prevalent chronic disease in the US <a   href="https://www.cdc.gov/pcd/issues/2019/19_0109.htm" target="_blank"> Xie et al (2019)</a> . This presents a public health issue that has economic burdens, increased mortality rates and other health complications. It is estimated that the economic burden of diabetes in the US is about $327 billion anually with the cost of care on the rise. With a rise in the number of diabetes cases in recent years and its economic burden, understanding of risk factors driving these numbers are essential to enable policies that intervene on this national health crises. Tracking of cases by the BRFSS is one way the US is using to track diabetes prevalence and its associated risk factors and also to intervene on modifiable lifestyle choices. For more details, visit <a href="https://www.cdc.gov/diabetes/about/index.html?utm_source=chatgpt.com#cdc_disease_basics_quick_facts_callout_callout-diabetes-by-the-numbers" target="_blank">Diabetes Basics</a> 
+  In the USA, diabetes impacts over 37 million Americans and 1 in 5 people with diabetes do not know they have it according to the CDC. Over 38% of the US population have pre-diabetes - a condition that increases the risk of developing type 2 diabetes. It is one of the most prevalent chronic diseases in the US <a   href="https://www.cdc.gov/pcd/issues/2019/19_0109.htm" target="_blank"> Xie et al (2019)</a> . This presents a public health issue that has economic burdens, increased mortality rates and other health complications. It is estimated that the economic burden of diabetes in the US is about $327 billion anually with the cost of care on the rise. With a rise in the number of diabetes cases in recent years and its economic burden, understanding of risk factors driving these numbers are essential to enable policies that intervene on this national health crises. Tracking of cases by the BRFSS is one way the US is using to curb diabetes prevalence and its associated risk factors and also to intervene on modifiable lifestyle choices. For more details, visit <a href="https://www.cdc.gov/diabetes/about/index.html?utm_source=chatgpt.com#cdc_disease_basics_quick_facts_callout_callout-diabetes-by-the-numbers" target="_blank">Diabetes Basics</a> 
 
-The Behavioral Risk Factor Surveillance System (BRFSS) is a telephone survey conducted annually by the Center For Disease Control and Prevention (CDC) to collect uniform, state-specific data on US adults' health-related risk behaviors, chronic health conditions like diabetes, and use of preventive services. The focus of the survey is to collect data on demographics and social determinants of health, mental health and well being, health risk behaviors, chronic health conditions and use of preventive services in the United States population. It is an important system that helps public health personnel to design policies and health programs that benefits states and local agencies. Data from the system and the current analysis will be utilized in the identification of risk factors that contribute to chronic diseases and health disparities among different populations, etc. Particularity, we will explore the ability to identify which of these features in the data is/are associated with diabetes either alone or in combination with other risk factors and also use advance methods in machine learning to accurately predict which individuals have diabetes based on the risk factors reported in the literature. 
+The Behavioral Risk Factor Surveillance System (BRFSS) is a telephone survey conducted annually by the Center For Disease Control and Prevention (CDC) to collect uniform, state-specific data on US adults' health-related risk behaviors, chronic health conditions like diabetes, and use of preventive services. The focus of the survey is to collect data on demographics and social determinants of health, mental health and well being, health risk behaviors, chronic health conditions and use of preventive services in the United States population. It is an important system that helps public health personnel to design policies and health programs that benefits states and local agencies. Data from the system and the current analysis is utilized in the identification of risk factors that contribute to chronic diseases and health disparities among different populations, etc. We will particularity, explore the ability to identify which feature variables in the data are associated with diabetes either alone or in combination with other risk factors and also use advance methods in machine learning to accurately predict which individuals have diabetes based on the risk factors reported in the literature. 
 
 
 * **Description of Data**
 
-  We will use the 2015 BRFSS data in our exploratory analysis of the features in this dataset. The dataset contains clean data originating from the original dataset which contained 441, 455 individuals and has 330 features. The clean version contains 253,681 survey responses from the CDC's BRFSS 2015. It contains 21 feature variables and obtained from the kaggle website <a   href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?utm_source=chatgpt.com&select=diabetes_b   inary_health_indicators_BRFSS2015.csv" target="_blank">Diabetes Health Indicators Dataset</a>
+  We will use the 2015 BRFSS data in our exploratory analysis of the feature variables in this dataset. The dataset contains clean data originating from the original dataset which contained 441, 455 individuals and has 330 features. The clean version contains 253,681 survey responses from the CDC's BRFSS 2015. It contains 21 feature variables and obtained from the kaggle website <a   href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?utm_source=chatgpt.com&select=diabetes_b   inary_health_indicators_BRFSS2015.csv" target="_blank">Diabetes Health Indicators Dataset</a>
 
 * **Feature Variables**
 
@@ -178,12 +178,12 @@ The Behavioral Risk Factor Surveillance System (BRFSS) is a telephone survey con
 ## 3. Distribution of Individual Features
 
 \
-To prepare the dataset for our analysis purpose, we utilized the sample function to create some missingness in our dataset. We randomly replaced 5% of all feature variables with missing values to make the dataset as a real world evidence data which is often observed with missing values in some feature variables. It will also enable the analysis to be suited for further analysis. It is important to point out that since this is an already cleaned dataset, there are not much to be done in addressing issues like unlikely values ( extreme height or weight, etc, non standard response to questionnaires among others). We will utilize exploratory data analysis to uncover patterns and relationships in the dataset. Feature engineering will be applied where applicable to create new variables and a visual representation of the date will be provided to identify trends and feature variables distributions. Additional, sub group visualizations will be presented that enlightens our understanding of how diabetes affects certain groups of people and which feature variables are associated with diabetes. 
+To prepare the dataset for our analysis purpose, we utilized the sample function to create some missingness in our dataset. We randomly replaced 5% of all feature variables with missing values to make the dataset represent real world data which is often observed with missing values in variables.  It is important to point out that since this is an already cleaned dataset, there are not much to be done in addressing issues like unlikely values ( extreme height or weight, etc, non standard response to questionnaires among others). We will utilize exploratory data analysis to uncover patterns and relationships in the dataset. Feature engineering will be applied where applicable to create new variables and a visual representation of the data will be provided to identify trends and feature variable distributions. Additionally, sub group visualizations will be presented that enlightens our understanding of how diabetes affects certain groups of people and which feature variables are associated with diabetes. 
 
 * **Individual analytic tasks** -
-The following feature variables comprise of some of the risk factors that are reported to be associated with diabetes and were found to show important statistics for further analysis.  
+The following feature variables comprise of some of the risk factors that are reported to be associated with diabetes that will be studied.
   + BMI: BMI histogram showed positively skewed data while a box plot also showed outliers. The outliers were removed from the dataset that were 1.5 times lower or higher than the     first and third quartiles. The plot of the data without the outliers showed a smoother distribution.
-    BMI was re-categorized into Underweight, Normal, Overweight and Obese. Over 70% of the sample were either overweight or obese to help identify at risk populations and easier      interpretation of the data and for easy trend identification. It was apparent that most of the participants where either over weight or obese from the bar chart.
+    BMI was re-categorized into Underweight, Normal, Overweight and Obese. Over 70% of the sample were either overweight or obese to help identify at risk populations and easier interpretation of the data and for trend identification. It was apparent that most of the participants where either over weight or obese.
 
 ```{r cleandata, results='hide'}
 # get data into R
@@ -191,9 +191,10 @@ The following feature variables comprise of some of the risk factors that are re
 #getwd()
 
 library(dplyr)
-ddat <- read.csv("/Users/mkatuahene/Desktop/WCU/R-Machine Learning/Assignment/Week 2/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+#ddat <- read.csv("/Users/mkatuahene/Desktop/WCU/R-Machine Learning/Assignment/Week 2/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+ddat <- read.csv("https://matuahene.github.io/STA552/Week%202/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
 
-unique(ddat$Sex)
+#getwd()
 # Categorize income variable
 ddat$Income_cat <- cut(ddat$Income, 
                                     breaks = c(-Inf, 3, 5, 6, Inf), 
@@ -398,23 +399,22 @@ bmigrp<- ggplot(ddat3 %>% filter(!is.na(BMI_Cat)), aes(x = BMI_Cat)) +
 bmigrp
 ```
 
-  + Diabetes Status: In the sample, majority of the participants did not have diabetes(86%). Only a smaller proportion where diabetic or had pre-diabetes. This could just mean low     prevalence of diabetes in our sample. 
+  + Diabetes Status: In the sample, majority of the participants did not have diabetes(86%). Only a smaller proportion where diabetic or had pre-diabetes. This suggests low prevalence of diabetes in our sample. 
   + Mental Health: Histogram and density plots showed few people had few days with poor mental health the last 30 days (mean = approximately 3 days of bad mental health days).
     Outliers were replaced with mean values.
-  + Physical Health in last 30 days distribution showed outliers and these values were replace with the mean value to preserve data.
-  + General Health Status: Most people reported very good or good health status overall with skewness observed towards poor health. The skewness did not appear to be signiticant 
+  + Physical Health in last 30 days distribution showed outliers and these values were replaced with the mean.
+  + General Health Status: Most people reported very good or good health status overall with skewness observed towards poor health. 
     and so no special changes will be applied to the variable. 
-  + Income variable was negatively skewed. Most participants earned higher. The variable as categorized into Low, Medium, and High income levels.
+  + Income variable was negatively skewed. Most participants earned higher income. The variable is categorized into Low, Medium, and High income levels.
   + Sex: More females participated in the sample data than males. 
-  + Age: Distribution of Age was such that majority of participants were in the age group were beyond 40 years old. This suggests that most participants were older and age should     controlled for in any analysis.
+  + Age: Distribution of age was such that majority of participants were beyond 40 years old. This suggests that most participants were older and age should     controlled for in any analysis.
   + Education: Most of the participants had a high school diploma or higher (over 80%). 
   + High blood Pressure and High Cholesterol: More participants did not have high blood pressure and more did not have any cholesterol checks in the last 5 years. 
-  + Smoker: About 44% of the participants smoked at least 100 cigarettes in their entire lifetime. Considering how smoking affects our health in several ways and with such many in     sample, controlling for this variable in our analysis and also see how this variable interacts with others to impact diabetes will be interesting for our analysis. 
-  + Heavy Alcohol consumption - both men and women reported they are not heavy drinkers but these could be wrong representation due to the fact that they may report as not heavy d     drinkers for socially desirable responses and expectations. The analysis can be conducted for men and women separately and for those who reported as heavy drinkers to uncover     hidden relations. 
-  + Heart disease/attack was not prevalent in our sample. But we know that diabetes impacts the heart function, it will be interesting to see if those who had diabetes reported to     have had any of these conditions. 
+  + Smoker: About 44% of the participants smoked at least 100 cigarettes in their entire lifetime. Considering how smoking affects our health and with such many in     sample, controlling for this variable in our analysis and exploring how this variable interacts with others to impact diabetes will be studied.
+  + Heavy Alcohol consumption - both men and women reported they are not heavy drinkers but these could be incorrect representation due to the fact that they may report as not heavy drinkers for socially desirable responses and expectations. The analysis can be conducted for men and women separately and for those who reported as heavy drinkers to uncover hidden relations. 
+  + Heart disease/attack was not prevalent in our sample. But we know that diabetes impacts the heart function, it will be interesting to see if those who had diabetes reported to ave had any of these conditions. 
   + Stroke: Most people had never been told they had diabetes (95%). 
-  + Other variables: Most people did not have difficulty walking up the stairs, were physically active in the past 30 days, had some form of health insurance and could see a      
-    doctor when needed, consumed vegetables once or more times a day, but slightly more did not consume fruits at the same rate as vegetables.
+  + Other variables: Most people did not have difficulty walking up the stairs, were physically active in the past 30 days, had some form of health insurance and could see a doctor when needed, consumed vegetables once or more times a day, but slightly more did not consume fruits at the same rate as vegetables.
 
 ```{r MenH, results='hide'}
 # Diabetes Status
@@ -556,16 +556,9 @@ We will now explore and have visualizations of relationships among several varia
 
   + Diabetes and BMI plots : The box plot showing the diabetes and BMI plot shows the median BMI in the diabetic group is higher suggests relationship between 
     these 2 variables. Additionally, the density plot shows higher BMI in the diabetic group than the non-diabetic group.
-  + Diabetes and Physical Activity plot: The bivariate plot shows that while the distribution of physical activity in the past 30 days is similar, far less  
+  + Diabetes and Physical Activity plot: The bivariate plot shows that while the distribution of physical activity in the past 30 days is similar, far less        
     diabetic people were physically active in the last 30 days.
 
-
-\
-
-## 5. Relationship between Features - Mutlivariate 
-
-\
-The density plot of BMI and Income groups shows that BMI is highest in more participants in the low and medium income groups. And participants in the very high income group are among those with BMI less than 30 or healthier. When the plot is split by diabetes status, we observed similar distribution but we see that variance in the income groups is not as distinct for high and very high groups. While higher BMI is comon in all diabetics, it is more common in the Low and Medium income groups and indicates some variability in the the diabetic group. Similar patterns were observed among general health status groups with those in the poor health status also with higher BMI indicators both in the diabetic and non-diabetic groups. More vraibitly was obseved in both groups in all helath status groups. 
 
 
 
@@ -608,8 +601,11 @@ ggplot(ddat3%>% filter(!is.na(Diabetes_binary) & !is.na(PhysActivity)), aes(x = 
 
 #colnames(ddat3)
 
+```
 
 
+
+```{r multivar}
 #correlation plot of numerical variables
 library(ggcorrplot)
 select_vars <- c("PhysHlth", "MentHlth", "GenHlth", "BMI")
@@ -681,5 +677,12 @@ ggplotly(ggplotly_density.n)
 
 ```
 
+
+\
+
+## 5. Relationship between Features - Mutlivariate 
+
+\
+The density plot of BMI and Income groups shows that BMI is highest in more participants in the low and medium income groups. And participants in the very high income group are among those with BMI less than 30 or healthier. When the plot is split by diabetes status, we observed similar distribution but we see that variance in the income groups is not as distinct for high and very high groups. While higher BMI is comon in all diabetics, it is more common in the Low and Medium income groups and indicates some variability in the the diabetic group. Similar patterns were observed among general health status with those in the poor health status also with higher BMI both in the diabetic and non-diabetic groups. The shift in peaks in both density plots suggests associations between diabetes and BMI which differs among different income and health groups. 
 
 

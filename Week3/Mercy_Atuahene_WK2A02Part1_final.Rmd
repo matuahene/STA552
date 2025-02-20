@@ -1,0 +1,735 @@
+---
+title: "Identification of Factors Associcated with Diabetes in the USA"
+#subtitle: "Behavioral Risk Factor Surveillance System (BRFSS)"
+author: "Mercy Atuahene" 
+date: "February 19, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: no
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 22px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 18px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 18px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: center;
+    font-weight: bold;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(dplyr)
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+#setwd("~")
+#setwd("/Users/mkatuahene/Desktop/WCU/R-Machine Learning/Assignment/Week 2") 
+```
+
+\
+
+## Abstract
+This analysis explores missing value imputation techniques that can be employed as part of data preparation for machine learning methodologies. It is based on a sample data from the Diabetes Health Indictors dataset (BRFSS 2015). We briefly review the nature of missing values and the methods of imputation that are often used in machine learning both for categorical and numeric feature variable imputation. Then we develop models to impute missing values using multiple imputation and compare two imputation methods drawing insights and providing recommendations for further analysis.
+
+
+\
+
+## 1. Introduction
+Missing data is common in all kinds of datasets and a persistent problem in statistical analyses. They have the potential to significantly impact the quality and reliability of analysis. See <a href="https://bookdown.org/mike/data_analysis/imputation-missing-data.html" target="_blank">Book Chapter on Missing Data</a>. For instance, in most statistical procedures, sample size may be reduced when records with missing data on certain variables involved in the analysis are removed based on the models of the procedures which can lead to unreliable parameter estimates. Imputation is generally used to handle missing data by replacing missing values with likely values based on the data.
+Several reasons are responsible for missing data including participants not responding to questions, equipment for data collection issues, poorly structured questionnaires, social desirability issues, etc. Understanding why and how missing data comes about in any analysis is critical to guiding researchers choose the best statistical methods in handling them. 
+
+Missing data is often classified into 3 main groups of mechanism of occurrence. They are:
+
+ +	**Missing at Random (MAR)**: In this mechanism, the missing data is related to the observed data but not the unobserved or missing data. Thus, the probability of that a value is missing depends on other variables in the analysis dataset that has observed values of other variables but not related to the value of the missing data. It assumes that the observed data provides enough information to describe the missing. In this type of missing data, we can handle the missing data through imputation methods such as multiple imputation (MI), maximum likelihood estimation (MLE) as they can account for the data patterns to minimize the impact of the missing values because the data is not completely missing at random. 
+ 
+ +	**Missing Completely at Random (MCAR)**: This occurs when the missingness is unrelated to the observed or non-missing data and unobserved data. In this type of missing data, no bias will be introduced into the analysis by the missing data and the missing values may be ignored in the analysis or simple approach to replacing them with an imputed value will not introduce bias.
+ 
+ +	**Missing Not at Random (MNAR)**: In this type of missing data, the missingness is related to the unobserved data. It is the most challenging type of missing data because of this. If this type of missing data is ignored, it can introduce bias in statistical model estimates and invalid results. In this type of missing data, the missingness often must be modeled posing challenges to data analysis. Traditional approached to handling missing data as in the case of MAR and MCAR do not apply in the case of MNAR. 
+ 
+As stated above, imputation is generally used to address missing data. Some of the ways used to handle missing data via imputation are:
+
+**Single value imputation** like mean/mode/median imputation where the mode is often applicable to categorical data. This method though easy has the potential to distort relationships in the data and reduce variability. For categorical variables, the mode is one way used to replace missing values. Alternative to the mode is using k-nearest neighbors algorithm to impute missing values. 
+
+**Likelihood based imputation**: These rely on the likelihood function to estimate the missing values. Examples include Expectation Maximization (EM), Multiple imputation, Bayesian approaches, Full Information Maximum Likelihood (FIML), outcome regression, etc. 
+
+**Multiple Imputation**: This approach is based on regression models to predict the missing values through the process of creating multiple complete datasets and then combining the results from each in an effort to account for uncertainty associated with the missing values.  These approaches are considered the preferred methods for handling missing data. 
+
+In choosing an effective approach to handling missing data, the following are recommended as the guiding principles – techniques that ensure that parameter estimates are unbiased particularly in MAR and MNAR missingness, methods that preserve the statistical power (detecting an effect if one exists- reducing the risk of Type II errors where a true effect is missed) and enables robust hypothesis testing (reliable methods even when certain assumptions are violated) and model estimation and those that accurately estimates standard errors for reliable p-values and confidence intervals. Methods like single imputation underestimate standard errors and lead to overconfident conclusions. 
+
+
+## 2. Replacement Imputation for Categorical Features
+To preserve sample size in our analysis, we employed replacement methods of categorical feature variables to demonstrate how these methods are utilized. We used the mode to replace missing values for the following variables.
+
+
+
+```{r cleandata}
+# get data into R
+ddat <- read.csv("https://matuahene.github.io/STA552/Week%202/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+
+
+# Categorize income variable
+ddat$Income_cat <- cut(ddat$Income, 
+                                    breaks = c(-Inf, 3, 5, 6, Inf), 
+                                    labels = c("Low", "Medium", "High", "Very High"))
+
+#table(ddat$Income , ddat$Income_cat )
+
+ddat2 <-ddat
+#colSums(is.na(ddat2))
+
+
+# assign meaningful labels to Age
+ddat2$Age <- factor(ddat2$Age, 
+  levels = 1:13, 
+  labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
+             "45-49", "50-54", "55-59", "60-64", "65-69", 
+             "70-74", "75-79", "80+"))
+
+
+
+# BMI categories
+ddat2 <- ddat2 %>%
+  mutate(BMI_Cat = cut(BMI, 
+                            breaks = c(0, 18.5, 24.9, 29.9, Inf), 
+                            labels = c("Underweight", "Normal", "Overweight", "Obese")))
+
+
+
+# YES/NO labels
+ddat2 <- ddat2 %>%
+  mutate(
+    HighChol = recode(HighChol, "0" = "No", "1" = "Yes"),
+    HighBP = recode(HighBP, "0" = "No", "1" = "Yes"),
+    Smoker = recode(Smoker, "0" = "No", "1" = "Yes"),
+    Stroke = recode(Stroke, "0" = "No", "1" = "Yes"),
+    HeartDiseaseorAttack = recode(HeartDiseaseorAttack, "0" = "No", "1" = "Yes"),
+    PhysActivity = recode(PhysActivity, "0" = "No", "1" = "Yes"),
+    Fruits = recode(Fruits, "0" = "No", "1" = "Yes"),
+    Veggies = recode(Veggies, "0" = "No", "1" = "Yes")
+  )
+
+
+#Diabetes status, Education and Income, etc labels
+ddat2 <- ddat2 %>%
+  mutate(
+    Education = recode(Education, 
+                       "1" = "No High School", 
+                       "2" = "Some High School", 
+                       "3" = "High School Graduate", 
+                       "4" = "Some College", 
+                       "5" = "College Graduate",
+                       "6" = "College 4 years or more (College graduate)"),
+    Income = recode(Income, 
+                    "1" = "<$10K", 
+                    "2" = "$10K-$15K", 
+                    "3" = "$15K-$25K", 
+                    "4" = "$25K-$35K", 
+                    "5" = "$35K-$50K", 
+                    "6" = "$50K-$75K", 
+                    "7" = ">$75K",
+                    .default = "Unknown"),
+   Sex = recode(Sex, 
+                  "1" = "Male", 
+                  "0" = "Female",
+                .default = "Unknown"),
+   CholCheck = recode(CholCheck,
+                      "1" = "Yes",
+                      "0" = "No" ),
+   
+   DiffWalk = recode(DiffWalk,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  
+   AnyHealthcare = recode(AnyHealthcare,
+                      "1" = "Yes",
+                      "0" = "No" ),
+
+   NoDocbcCost = recode(NoDocbcCost,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  HvyAlcoholConsump = recode(HvyAlcoholConsump,
+                      "1" = "Yes",
+                      "0" = "No" ),
+    Diabetes_binary = recode(Diabetes_binary, 
+                            "0" = "No Diabetes", 
+                            "1" = "Has Diabetes"),
+  
+  GenHlth = recode(GenHlth,
+                  "1" = "Excellent",
+                   "2" = "Very Good",
+                   "3" = "Good",
+                   "4" = "Fair",
+                   "5" = "Poor",
+                   .default = "Unknown")
+  )
+
+
+nonemiss_dat<-ddat2
+
+#table (ddat2$Income)
+#unique(ddat2$Income)
+
+# create some missing data points 
+# Define the percentage of missing values 
+missing_percentage <- 0.05
+
+# Get total number of rows
+total_rows <- nrow(ddat2)
+
+# Apply missing values to all variables
+ddat2 <- ddat2 %>%
+  mutate(across(everything(), ~ {
+    miss_id <- sample(1:total_rows, size = round(missing_percentage * total_rows), replace = FALSE)
+    .[miss_id] <- NA  # Assign NA to selected rows
+    .
+  }))
+
+# overall summary of variables
+#dfSummary(ddat2)
+
+#missing values data
+misingdat <- ddat2
+forMICE <- ddat2 # reserve data for MICE imputation
+
+# Generate a summary table only for missing rows: +HighBP+CholCheck+HeartDiseaseorAttack+GenHlth+HvyAlcoholConsump+CholCheck+AnyHealthcare+Income+BMI_Cat+Education
+summissing<-table1(~Sex+Smoker+Stroke,  
+       data=misingdat,
+       caption="Table 1: Descriptive Statistics showing select categorical feature variables with missing data (count/percentages)", 
+       footnote="Data source:BRFSS Diabetes Dataset", topclass="Rtable1-zebra")
+
+
+```
+
+```{r catreplace}
+#function to replace missing values with the mode of categorical variables
+replace_na_with_mode <- function(x) {
+  if (is.factor(x)) x <- as.character(x)  # Convert factor to character
+  
+  # Remove NA values for calculating the mode
+  x_no_na <- x[!is.na(x)]  
+  
+  # Find the mode using the non-missing values
+  mode_value <- names(sort(table(x_no_na), decreasing = TRUE))[1]  
+  
+  # Replace only NA values with the mode (without altering non-missing values)
+  x[is.na(x)] <- mode_value  
+  
+  # Convert back to factor if the original variable was a factor
+  return (x)
+ 
+}
+
+
+ddat2_mod <- ddat2 %>%
+  mutate(across(c("Sex", "Income", "BMI_Cat", "Education", "Smoker", "Stroke", "HighBP", "CholCheck", 
+                  "HeartDiseaseorAttack", "GenHlth", "HvyAlcoholConsump", "CholCheck", "AnyHealthcare"), 
+                replace_na_with_mode))
+#dfSummary(ddat2_mod)
+
+#table(misingdat$Sex, useNA = "ifany")  # `useNA = "ifany"` includes NA counts
+#table(ddat2_mod$Sex)  # `useNA = "ifany"` includes NA counts
+
+
+# Generate a summary table only for missing rows
+summnonissing<-table1(~Sex+Smoker+Stroke,  
+       data=ddat2_mod,
+       caption="Table 1: Descriptive Statistics of Select categorical feature variables with missing replaced by mode", 
+       footnote="Data source:BRFSS Diabetes Dataset", topclass="Rtable1-zebra")
+
+
+
+# Use grid.arrange to print the tables side by side
+#summissing
+#summnonissing
+# Remove everything explicitly, including hidden variables (like functions)
+#rm(list = ls(all = TRUE)) 
+```
+
+```{r tables1}
+kable(summissing, caption = 'Table showing data summary including summary of missing data')
+```
+```{r tables2}
+kable(summnonissing, caption = 'Table showing missing data replaced with mode summary')
+```
+
+From **Tables \@ref(tab:tables1) and  \@ref(tab:tables2)**, Table 1 showa the summary of select feature variables that presents missing and non-missing data. In Table 2, however, the same summary rows with missing category are replaced by the value of the mode value of the corresponding variable and hence no missing rows. Example Sex had a mode value = Female and the number of missing in Table 1 is replaced by Female resulting in the summary greater than 58% from around 53% Females.
+
+
+```{r meannoimpute}
+  BMI_mean <- mean(misingdat$BMI, na.rm = TRUE)          # Calculate BMI mean
+  MentHlth_mean <- mean(misingdat$MentHlth , na.rm = TRUE)  # Calculate MentHlth mean
+  PhysHlth_mean <- mean(misingdat$PhysHlth, na.rm = TRUE)  # Calculate PhysHlth mean
+  
+  summary_data1 <- data.frame(BMI_mean,MentHlth_mean,PhysHlth_mean)
+  
+kable(summary_data1, 
+      caption = "Summary of Mean Values for BMI, Poor Mental Health in past 30 days, and Number of days of Poor Physical Health with no imputation",
+      col.names = c("BMI_Mean", "MentHlth_mean", "PhysHlth_mean"),
+      format = "markdown", 
+      digits = 2)
+```
+
+```{r meanimpute}
+# using the Hmisc package to impute data
+ddat2_mod$BMI <- impute(ddat2_mod$BMI, fun = mean)
+ddat2_mod$MentHlth <- impute(ddat2_mod$MentHlth, fun = median)
+ddat2_mod$PhysHlth <- impute(ddat2_mod$PhysHlth, fun = median)
+
+
+    BMI_mean <- mean(ddat2_mod$BMI, na.rm = TRUE)          # Calculate BMI mean
+    MentHlth_mean <- mean(ddat2_mod$MentHlth , na.rm = TRUE)  # Calculate MentHlth mean
+    PhysHlth_mean <- mean(ddat2_mod$PhysHlth, na.rm = TRUE)  # Calculate PhysHlth mean
+
+summary_data <- data.frame(BMI_mean,MentHlth_mean,PhysHlth_mean)
+
+kable(summary_data, 
+      caption = "Summary of Mean Values for BMI, Poor Mental Health in past 30 days, and Number of days of Poor Physical Health using Hmisc impute function",
+      col.names = c("BMI_Mean", "MentHlth_mean", "PhysHlth_mean"),
+      format = "markdown", 
+      digits = 2)
+
+```
+
+In **Table \@ref(tab:meannoimpute)**, mean values of selected feature variables are compared with **Table \@ref(tab:meanimpute)**, which shows mean values when the select feature variables missing values are imputed with the **Hmisc impute function**. The non-imputed mean values in **Table \@ref(tab:meannoimpute)** shows larger means compared to the imputed values in **Table \@ref(tab:meanimpute)**.
+
+
+
+```{r knnimp}
+# using the VIM package to impute data using the knn algorithm
+# Select the columns to impute (e.g., 'Age' and 'Height')
+data_to_impute <- misingdat[, c("BMI", "MentHlth", "PhysHlth", "Veggies")]
+
+# Perform KNN imputation on the selected columns
+#install.packages("yaImpute")
+#library(yaImpute)
+# Impute missing data using KNN from the FNN package
+#temp_imputed_data <- knnImpute(data_to_impute, k = 2)
+
+
+#chooseCRANmirror()
+#install.packages("DMwR")
+#library(DMwR)
+library(VIM)
+temp_imputed_data <- kNN(data_to_impute[1:15000, ], k = 2) # using a sample due to memeory issues for demonstration
+temp_imputed_data <- temp_imputed_data[, c("BMI", "MentHlth", "PhysHlth", "Veggies")]
+
+missing_summary <- data.frame(
+  Variable = colnames(data_to_impute),
+  Missing = colSums(is.na(data_to_impute)),
+  Non_Missing = colSums(!is.na(data_to_impute))
+)
+
+kable(missing_summary, 
+      caption = "Summary of Imputation of select feature vriables without using kNN algorithm on a sample",
+      col.names = c( ),
+      format = "markdown", 
+      digits = 2)
+```
+
+```{r knnimp1}
+missing_summary1 <- data.frame(
+  Variable = colnames(temp_imputed_data),
+  Missing = colSums(is.na(temp_imputed_data)),
+  Non_Missing = colSums(!is.na(temp_imputed_data))
+)
+
+kable(missing_summary1, 
+      caption = "Summary of Imputation of select feature vriables using kNN algorithm on a sample",
+      col.names = c( ),
+      format = "markdown", 
+      digits = 2)
+
+```
+
+In **Table \@ref(tab:knnimp)**, we use kNN algorithm to replace a sample of the  dataset to demonstrate the method as a result of computer memory issues while using the VIM package on the diabetes whole dataset. In this table, there number of missing and non-missing values are presented on the tables but in **Table \@ref(tab:knnimp1)**,  the number of missing = zero for all selected feature variables using the kNN algorithm. This method works for both categorical and numeric variables as observed in the Veggies and BMI variables respectively and the results presented covers both type of variables. The approach is further used to impute missing values in the regression imputation sections below. 
+
+
+
+## 3. Regression-based Imputation for Mnumerical/Categorical Features
+Imputation methods where independent feature variables may contain information that influences the target variable, using simple imputation appraoches to impute missing data will lead to unreliable conclusions that does not align with the underlying information inherent in the data. To mitigate this situation, we will use logistic regression approach to replace missing values in the target variable (Diabetes_binary) in order to introduce random error to account for variability.
+
+```{r complete}
+
+# first predicting missing target variable using using variables related to the target variable
+# Step 1: Fit logistic regression model (only uses complete cases)
+misingdat<-ddat2
+misingdat$Diabetes_binary <- as.factor(misingdat$Diabetes_binary) #ensures the target variable is a factor
+
+misingdat$Diabetes_binaryn<- ifelse(misingdat$Diabetes_binary == "Has Diabetes", 1, 
+                                            ifelse(misingdat$Diabetes_binary == "No Diabetes", 0, NA))
+
+#table(misingdat$Diabetes_binaryn, useNA = "ifany") 
+
+# Convert character variables to factors
+misingdat$Smoker <- factor(misingdat$Smoker, levels = c("No", "Yes"))
+misingdat$Sex <- factor(misingdat$Sex, levels = c("Male", "Female"))
+misingdat$HighBP <- factor(misingdat$HighBP, levels = c("No", "Yes"))
+misingdat$HeartDiseaseorAttack <- factor(misingdat$HeartDiseaseorAttack, levels = c("No", "Yes"))
+misingdat$HvyAlcoholConsump <- factor(misingdat$HvyAlcoholConsump, levels = c("No", "Yes"))
+misingdat$HighChol <- factor(misingdat$HighChol, levels = c("No", "Yes"))
+misingdat$Stroke <- factor(misingdat$Stroke, levels = c("No", "Yes"))
+misingdat$Education <- factor(misingdat$Education)
+misingdat$GenHlth <- factor(misingdat$GenHlth)
+misingdat$Income_cat <- factor(misingdat$Income_cat)
+
+imp.model = glm(Diabetes_binaryn ~ Income_cat + Smoker + BMI + Age + Sex + Education + GenHlth + MentHlth + PhysHlth + HighBP + HeartDiseaseorAttack +  HvyAlcoholConsump + HighChol + Stroke, 
+                data = misingdat, family = binomial)
+
+#formula(imp.model)
+#tidy(imp.model)
+
+# Step 2: Identify rows where y is missing
+newdata = misingdat[is.na(misingdat$Diabetes_binaryn),]
+#head(newdata)
+
+# Step 3: Predict missing y values (probability estimates)
+pred.Diabetes_binaryn = predict(imp.model, newdata, type = "response")
+
+#print (pred.Diabetes_binary)
+#summary(pred.Diabetes_binaryn, useNA = "ifany") # why does the number of missing still remain
+
+
+# Step 4: Convert probabilities to binary values (threshold = 0.5)
+misingdat$Diabetes_binaryn[is.na(misingdat$Diabetes_binaryn)] = ifelse(pred.Diabetes_binaryn > 0.5, 1, ifelse(pred.Diabetes_binaryn < 0.5, 0, NA))
+
+#check missing after prediction to impute target variable
+#table (misingdat$Diabetes_binaryn, useNA = "ifany"). # why do we still have some missing though reduced
+
+
+# Step 5: Display the updated dataset
+#kable(misingdat)
+
+
+```
+
+Following regression to impute the Target variable, the number of missing in the Target variable reduced from 12684 to 6492 instances after the regression based imputation.  And the **number of the no diabetes group increase from 2074433 (before imputation) to  213351 (after imputation). Similarly, the number of the diabetes group increase from 33563 (before imputation) to 33792 (after imputation)**.
+
+
+## 4. Multiple Imputation
+Missing data poses challenges that lead to biased estimates and reduced statistical power. One approach used to to address this is multiple imputation methods, such as the **Multivariate Imputation by Chained Equations (MICE)** procedure. This apparoach generates plausible values for missing observations in order to improve the robustness of regression models.
+
+In our analysis, we develop a nonlinear—based model on the the Diabetes dataset because of a binary response. We will apply the **MICE imputation** procedure to create multiple complete datasets (5 in total) via multiple imputed datasets and refit the same regression model to these imputed datasets - to capture the variability introduced from the missing data. Then, we will fit the model to the original dataset where missing values (records) are removed via listwise deletion. Finally, we comparing the results of both approaches to determine which one enhances model performance and mitigates biases resulting from missing data. We will use the pooled results from the MICE imputation and the results from the original data for this comparison. 
+
+
+
+```{r mi, fig.cap="Comparison of observed data vs predicte data via MICE ", fig.align="center" , results='hide'}
+
+#make this example reproducible
+set.seed(23)
+
+#select random sample of 1,000,000 rows from data frame
+rand_forMICE_dat0 <- forMICE[sample(nrow(forMICE), size=20000, replace = FALSE), ]
+
+rand_forMICE_dat0$Diabetes_binaryn <- ifelse(rand_forMICE_dat0$Diabetes_binary == "Has Diabetes", 1, 
+                                            ifelse(rand_forMICE_dat0$Diabetes_binary == "No Diabetes", 0, NA))
+#table(forMICE$Diabetes_binary )
+#table(rand_forMICE_dat0$Diabetes_binaryn,useNA="always")
+#table(rand_forMICE_dat0$HeartDiseaseorAttack ,useNA="always")
+#dim(rand_forMICE_dat)  # Check the number of rows and columns
+#colnames(rand_forMICE_dat)  # Ensure only selected columns exist
+
+#forMICE  data set with missing values
+## individual variables to be imputed
+rand_forMICE_dat <- rand_forMICE_dat0 [, c("Diabetes_binaryn", "Income_cat",  "Smoker",  "BMI",  "Age" ,"Sex", "Education", "GenHlth",  
+                                           "MentHlth",  "PhysHlth", "HighBP" ,"HeartDiseaseorAttack" ,  "HvyAlcoholConsump" , "HighChol" , 
+                                           "Stroke")]
+
+
+# Convert character variables to factors
+rand_forMICE_dat$Smoker <- factor(rand_forMICE_dat$Smoker, levels = c("No", "Yes"))
+rand_forMICE_dat$Sex <- factor(rand_forMICE_dat$Sex, levels = c("Male", "Female"))
+rand_forMICE_dat$HighBP <- factor(rand_forMICE_dat$HighBP, levels = c("No", "Yes"))
+rand_forMICE_dat$HeartDiseaseorAttack <- factor(rand_forMICE_dat$HeartDiseaseorAttack, levels = c("No", "Yes"))
+rand_forMICE_dat$HvyAlcoholConsump <- factor(rand_forMICE_dat$HvyAlcoholConsump, levels = c("No", "Yes"))
+rand_forMICE_dat$HighChol <- factor(rand_forMICE_dat$HighChol, levels = c("No", "Yes"))
+rand_forMICE_dat$Stroke <- factor(rand_forMICE_dat$Stroke, levels = c("No", "Yes"))
+rand_forMICE_dat$Education <- factor(rand_forMICE_dat$Education)
+rand_forMICE_dat$GenHlth <- factor(rand_forMICE_dat$GenHlth)
+rand_forMICE_dat$Income_cat <- factor(rand_forMICE_dat$Income_cat)
+
+#implement MICE
+imp5 <- mice(rand_forMICE_dat, method = c("logreg", "polyreg", "logreg", "pmm", "polyreg", "logreg", "polyreg", "polyreg", "pmm", 
+                                    "pmm", "logreg",  "logreg", "logreg", "logreg", "logreg"), 
+                 maxit = 10,  # iterating 10 cycles to complete each imputed data set
+                 m = 5,       # generate 5 imputed data set
+                 seed = 134,
+                 print=F)     # suppress printouts
+
+#summary(imp5)
+#plot(imp5)  # Visualize imputed vs. observed data
+
+```
+
+```{r midensity, fig.cap="Density Plots of Select Feature Variable: Comparison of observed data vs predicte data via MICE ", fig.align="center" , results='hide'}
+# view desity plot of some select variables
+densityplot(imp5, ~BMI + Age + HighBP + Income_cat + Smoker + Sex + HeartDiseaseorAttack + Education + GenHlth)
+
+
+#ls(all.names = TRUE)
+
+#Model on MICE-Imputed Data
+model5 <- with(imp5,  glm(Diabetes_binaryn ~ Income_cat + Smoker + BMI + Age + Sex + Education + GenHlth + MentHlth + PhysHlth + HighBP +  
+                          HeartDiseaseorAttack +  HvyAlcoholConsump + HighChol + Stroke, 
+                          family = binomial))  # The statistical model to assess
+                                             # the relationship between Target and independent variables
+summary.stats = summary(model5)               # display the regression results of 
+                                             # individual imputed data set.
+#summary.stats 
+
+
+```
+
+
+
+In **Figure \@ref(fig:midensity)**, the predicted data is plotted against the observed data to evaluate performance of the model. The density plots appear to indicate the predicted follows the distribution of the observed data in the select features variables shown.Aso we see bi-modal distribution on some of the feature variables.
+
+
+```{r poolmice}
+
+## Pools the results across multiple imputations
+kable(summary(pool(model5)) , caption = 'Table showing Pooled results across multiple imputations using MICE')
+
+```
+
+In **Tables \@ref(tab:poolmice) **,  pooled summary from all 5 imputed datasets are presented from the MICE procedure is presented. Next we show the results of the same model using the original dataset. 
+ 
+The **original model imputation is based on kNN algorithm** for both nuemrical and categorical variables as discussed above. It is important to note that due to computational resource limits, we utilized a random sample of size = 20000 for this part of the analyses. And we reduced the n-neigborhood paramter to 2 (k=2) in the kNN algorithm procedure.
+
+
+```{r modelorig}
+#Model on Original Data using the subset used for MICE
+
+
+library(VIM)
+set.seed(23)
+ddat2_mod2 <- ddat2_mod[sample(nrow(ddat2_mod), size=20000, replace = FALSE), ]
+ddat2_mod3 <- ddat2_mod2[, c("Diabetes_binary", "Income_cat",  "Smoker",  "BMI",  "Age" ,"Sex", "Education", "GenHlth",  
+                                           "MentHlth",  "PhysHlth", "HighBP" ,"HeartDiseaseorAttack" ,  "HvyAlcoholConsump" , "HighChol" , 
+                                           "Stroke")]
+ddat2_mod3$Diabetes_binaryn<- ifelse(ddat2_mod3$Diabetes_binary == "Has Diabetes", 1, 
+                                            ifelse(ddat2_mod3$Diabetes_binary == "No Diabetes", 0, NA))
+
+
+ddat2_mod3 <- kNN(ddat2_mod3, k = 3) # using a sample due to memeory issues for demonstration
+
+
+# Convert character variables to factors
+ddat2_mod3$Smoker <- factor(ddat2_mod3$Smoker, levels = c("No", "Yes"))
+ddat2_mod3$Sex <- factor(ddat2_mod3$Sex, levels = c("Male", "Female"))
+ddat2_mod3$HighBP <- factor(ddat2_mod3$HighBP, levels = c("No", "Yes"))
+ddat2_mod3$HeartDiseaseorAttack <- factor(ddat2_mod3$HeartDiseaseorAttack, levels = c("No", "Yes"))
+ddat2_mod3$HvyAlcoholConsump <- factor(ddat2_mod3$HvyAlcoholConsump, levels = c("No", "Yes"))
+ddat2_mod3$HighChol <- factor(ddat2_mod3$HighChol, levels = c("No", "Yes"))
+ddat2_mod3$Stroke <- factor(ddat2_mod3$Stroke, levels = c("No", "Yes"))
+ddat2_mod3$Education <- factor(ddat2_mod3$Education)
+ddat2_mod3$GenHlth <- factor(ddat2_mod3$GenHlth)
+ddat2_mod3$Income_cat <- factor(ddat2_mod3$Income_cat)
+
+
+
+
+modelorig <- glm(Diabetes_binaryn ~ Income_cat + Smoker + BMI + Age + Sex + Education + GenHlth + MentHlth + PhysHlth + HighBP +  
+                          HeartDiseaseorAttack +  HvyAlcoholConsump + HighChol + Stroke, 
+                          data=ddat2_mod3, family = binomial)
+# Extract coefficient summary as a data frame
+model_summary <- as.data.frame(summary(modelorig)$coefficients)
+
+# Print the table using kable
+kable(model_summary, caption = "Regression Model Summary of Original Data")
+```
+The summary from the same model in the original data using the kNN approach appraoch is presented in **Table \@ref(tab:modelorig) ** above. Some differences in the model estimates across the 2 model summaries are observed on these tables.
+ 
+Next, we **compare model performance from the MICE procedure with the original dataset imputation method** which uses the kNN procedure from above. 
+
+```{r compmodelsAIC}
+
+library(MASS)
+
+# AIC Comparison of models
+
+# Extract fit statistics for each imputed model
+mice_fits <- lapply(1:5, function(i) glm(Diabetes_binaryn ~ Income_cat + Smoker + BMI + Age + Sex + Education + GenHlth + 
+                                            MentHlth + PhysHlth + HighBP + HeartDiseaseorAttack +  
+                                            HvyAlcoholConsump + HighChol + Stroke, 
+                                            data = complete(imp5, i), family = binomial))
+
+# Compute AIC for each model and average them
+aic_values <- sapply(mice_fits, AIC)
+bic_values <- sapply(mice_fits, BIC)
+
+mean_aic <- mean(aic_values)
+mean_bic <- mean(bic_values)
+
+cat("Original Model AIC:", AIC(modelorig), "\n")
+cat("MICE Model Mean AIC:", mean_aic, "\n")
+cat("Original Model BIC:", BIC(modelorig), "\n")
+cat("MICE Model Mean BIC:", mean_bic, "\n")
+
+```
+
+
+In the **AIC** (Akaike Information Criterion) and **BIC** (Bayesian Information Criterion) values reported below, lower AIC implies better model fit and we can infer that the **Original Model AIC** is greater than the **MICE Model Mean AIC**. And the BIC from the **Original Model BIC** is also greater than that of **MICE Model Mean BIC** implying MICE imputation model perfoming better than the original dataset model without the multiple imputation approach.
+
+
+```{r compmodelsAUC}
+
+library(pROC)
+
+# Predictions for original model
+pred_original <- predict(modelorig, type = "response")
+
+# Compute ROC and AUC for original data
+roc_original <- roc(ddat2_mod3$Diabetes_binaryn, pred_original)
+
+# Compute ROC and AUC for MICE-imputed models
+mice_roc_aucs <- sapply(1:5, function(i) {
+  mice_pred <- predict(mice_fits[[i]], type = "response")
+  auc(roc(complete(imp5, i)$Diabetes_binaryn, mice_pred))
+})
+
+# Get the average AUC across imputed datasets
+mean_auc_mice <- mean(mice_roc_aucs)
+
+cat("Original Model AUC:", auc(roc_original), "\n")
+cat("MICE Model Mean AUC:", mean_auc_mice, "\n")
+
+
+```
+
+
+Finally, we compare the models' ability to classify the groups of our target feature variable. With **AUC < 0.82 from the original model** and **a mean AUC >= 0.82 from the MICE model**, both models do good at discriminating the groups well. However the values suggests that handling missing data with MICE imputation improved model performance overall.
+
+
+**Implications**
+
++ Impact or missing data on model performance: The predictive power of a model can be weakened if missing data is not handled cautiously. Proper imputation methos like the MICE approach should be considered when considering imputation.
+
++ In clinical setting, the ability to tell which patients actually have disease is important. In this case, knowing who really has diabetes will help doctors access appropriate follow up care. This means AUC can be utilized to improved risk predinction and improved outcomes for patients. This will ultimately lead to physicians ability to better stratify patients.
+
+
+
+
+
+
+
+

@@ -1,0 +1,659 @@
+---
+title: "Identification of Factors Associcated with Diabetes in the USA"
+#subtitle: "Behavioral Risk Factor Surveillance System (BRFSS)"
+author: "Mercy Atuahene" 
+date: "February 19, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: no
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 22px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 18px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 18px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: center;
+    font-weight: bold;
+}
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(dplyr)
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+library(bookdown)
+#setwd("~")
+#setwd("/Users/mkatuahene/Desktop/WCU/R-Machine Learning/Assignment/Week 2") 
+```
+
+\
+
+## Abstract
+This analysis explores missing value imputation techniques that can be employed as part of data preparation for machine learning methodologies. It is based on a sample data from the Diabetes Health Indictors dataset (BRFSS 2015). We briefly review the nature of missing values and the methods of imputation that are often used in machine learning both for categorical and numeric feature variable imputation. Then we develop models to impute missing values using multiple imputation and compare two imputation methods drawing insights and providing recommendations for further analysis.
+
+
+\
+
+## 1. Introduction
+Missing data is common in all kinds of datasets and a persistent problem in statistical analyses. They have the potential to significantly impact the quality and reliability of analysis. See <a href="https://bookdown.org/mike/data_analysis/imputation-missing-data.html" target="_blank">Book Chapter on Missing Data</a>. For instance, in most statistical procedures, sample size may be reduced when records with missing data on certain variables involved in the analysis are removed based on the models of the procedures which can lead to unreliable parameter estimates. Imputation is generally used to handle missing data by replacing missing values with likely values based on the data.
+Several reasons are responsible for missing data including participants not responding to questions, equipment for data collection issues, poorly structured questionnaires, social desirability issues, etc. Understanding why and how missing data comes about in any analysis is critical to guiding researchers choose the best statistical methods in handling them. 
+
+Missing data is often classified into 3 main groups of mechanism of occurrence. They are:
+
+ +	**Missing at Random (MAR)**: In this mechanism, the missing data is related to the observed data but not the unobserved or missing data. Thus, the probability of that a value is missing depends on other variables in the analysis dataset that has observed values of other variables but not related to the value of the missing data. It assumes that the observed data provides enough information to describe the missing. In this type of missing data, we can handle the missing data through imputation methods such as multiple imputation (MI), maximum likelihood estimation (MLE) as they can account for the data patterns to minimize the impact of the missing values because the data is not completely missing at random. 
+ 
+ +	**Missing Completely at Random (MCAR)**: This occurs when the missingness is unrelated to the observed or non-missing data and unobserved data. In this type of missing data, no bias will be introduced into the analysis by the missing data and the missing values may be ignored in the analysis or simple approach to replacing them with an imputed value will not introduce bias.
+ 
+ +	**Missing Not at Random (MNAR)**: In this type of missing data, the missingness is related to the unobserved data. It is the most challenging type of missing data because of this. If this type of missing data is ignored, it can introduce bias in statistical model estimates and invalid results. In this type of missing data, the missingness often must be modeled posing challenges to data analysis. Traditional approached to handling missing data as in the case of MAR and MCAR do not apply in the case of MNAR. 
+ 
+As stated above, imputation is generally used to address missing data. Some of the ways used to handle missing data via imputation are:
+
+**Single value imputation** like mean/mode/median imputation where the mode is often applicable to categorical data. This method though easy has the potential to distort relationships in the data and reduce variability. For categorical variables, the mode is one way used to replace missing values. Alternative to the mode is using k-nearest neighbors algorithm to impute missing values. 
+
+**Likelihood based imputation**: These rely on the likelihood function to estimate the missing values. Examples include Expectation Maximization (EM), Multiple imputation, Bayesian approaches, Full Information Maximum Likelihood (FIML), outcome regression, etc. 
+
+**Multiple Imputation**: This approach is based on regression models to predict the missing values through the process of creating multiple complete datasets and then combining the results from each in an effort to account for uncertainty associated with the missing values.  These approaches are considered the preferred methods for handling missing data. 
+
+In choosing an effective approach to handling missing data, the following are recommended as the guiding principles – techniques that ensure that parameter estimates are unbiased particularly in MAR and MNAR missingness, methods that preserve the statistical power (detecting an effect if one exists- reducing the risk of Type II errors where a true effect is missed) and enables robust hypothesis testing (reliable methods even when certain assumptions are violated) and model estimation and those that accurately estimates standard errors for reliable p-values and confidence intervals. Methods like single imputation underestimate standard errors and lead to overconfident conclusions. 
+
+
+### 1.1 Introduction - Feature Engineering
+From the EDA steps in our analysis, BMI, number of bad mental health days and number of bad physical health days were negatively skewed. General health rating showed less people responding to have a poor health status. We also found that more people were other the age group of 40 and higher. Additionally, few people were uneducated compared to all participants. Similarly, the distribution of Income showed that more people earned less than  $75,000. To enhance models developed from these variables in terms of performance and also to achieve parsimonious models, the following will be applied to these variables as part of the feature engineering processing
+
++ **BMI**: Binning will be applied to categorize these values into "Underweight", "Normal", "Overweight", "Obese"  using the following cut of points 0-18.5, >18.5 - 24.9, >24.9 - 29.9 and >29.9 - highest respectively. If there are smaller counts in the groups, we would use quartiles to bin BMI.
+
++ **Number of bad mental health days and number of bad physical health days** : Log transformations will be applied to transform the data in order to reduce the impact of outliers when applicable else other engineering approach will be applied.
+
++ **General Health Rating** : This feature will be re-grouped by combining Poor and Fair Ratings into one rating as Fair to minimize over fitting data to small groups.
+
++ **Education and Income**: will also be regrouped such that we will have less then High School education and Greater than High School education. 
+
++ **Age**: This feature will also be binned into smaller groups to reduce the number of small sample sub-groups in the feature. 
+
+
+
+
+
+```{r cleandata}
+# get data into R
+ddat <- read.csv("https://matuahene.github.io/STA552/Week%202/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+
+#remove duplicates basedd on all columns
+df_clean <- ddat[!duplicated(ddat), ]
+
+dups<-ddat[duplicated(ddat), ]
+#View(dups)
+#nrow(ddat)
+#nrow(df_clean)
+
+ddat2 <-df_clean
+
+ddat2$Income_num <- ddat2$Income
+
+
+
+# assign meaningful labels to Age
+ddat2$Age <- factor(ddat2$Age, 
+  levels = 1:13, 
+  labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
+             "45-49", "50-54", "55-59", "60-64", "65-69", 
+             "70-74", "75-79", "80+"))
+
+
+# BMI categories
+ddat2 <- ddat2 %>%
+  mutate(BMI_Cat = cut(BMI, 
+                            breaks = c(0, 18.5, 24.9, 29.9, Inf), 
+                            labels = c("Underweight", "Normal", "Overweight", "Obese")))
+#table( ddat2$BMI_Cat )
+
+
+
+# YES/NO labels
+ddat2 <- ddat2 %>%
+  mutate(
+    HighChol = recode(HighChol, "0" = "No", "1" = "Yes"),
+    HighBP = recode(HighBP, "0" = "No", "1" = "Yes"),
+    Smoker = recode(Smoker, "0" = "No", "1" = "Yes"),
+    Stroke = recode(Stroke, "0" = "No", "1" = "Yes"),
+    HeartDiseaseorAttack = recode(HeartDiseaseorAttack, "0" = "No", "1" = "Yes"),
+    PhysActivity = recode(PhysActivity, "0" = "No", "1" = "Yes"),
+    Fruits = recode(Fruits, "0" = "No", "1" = "Yes"),
+    Veggies = recode(Veggies, "0" = "No", "1" = "Yes")
+  )
+
+#Diabetes status, Education and Income, etc labels
+ddat2 <- ddat2 %>%
+  mutate(
+    Education = recode(Education, 
+                       "1" = "No High School", 
+                       "2" = "Some High School", 
+                       "3" = "High School Graduate", 
+                       "4" = "Some College", 
+                       "5" = "College Graduate",
+                       "6" = "College 4 years or more (College graduate)"),
+    Income = recode(Income, 
+                    "1" = "<$10K", 
+                    "2" = "$10K-$15K", 
+                    "3" = "$15K-$25K", 
+                    "4" = "$25K-$35K", 
+                    "5" = "$35K-$50K", 
+                    "6" = "$50K-$75K", 
+                    "7" = ">$75K",
+                    "8" = ">$75K",
+                    .default = "Unknown"),
+  
+    
+   Sex = recode(Sex, 
+                  "1" = "Male", 
+                  "0" = "Female",
+                .default = "Unknown"),
+   CholCheck = recode(CholCheck,
+                      "1" = "Yes",
+                      "0" = "No" ),
+   
+   DiffWalk = recode(DiffWalk,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  
+   AnyHealthcare = recode(AnyHealthcare,
+                      "1" = "Yes",
+                      "0" = "No" ),
+
+   NoDocbcCost = recode(NoDocbcCost,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  HvyAlcoholConsump = recode(HvyAlcoholConsump,
+                      "1" = "Yes",
+                      "0" = "No" ),
+    Diabetes_binary = recode(Diabetes_binary, 
+                            "0" = "No Diabetes", 
+                            "1" = "Has Diabetes"),
+  
+  GenHlth = recode(GenHlth,
+                  "1" = "Excellent",
+                   "2" = "Very Good",
+                   "3" = "Good",
+                   "4" = "Fair",
+                   "5" = "Poor",
+                   .default = "Unknown")
+  )
+
+
+nonemiss_dat<-ddat2
+
+
+ddat2$Education <- factor(ddat2$Education, levels = c("No High School", "Some High School", "High School Graduate", "Some College" ,"College Graduate"))
+
+ddat2$Income <- factor(ddat2$Income, levels=c("<$10K", "$10K-$15K", "$15K-$25K", "$25K-$35K", "$35K-$50K", "$50K-$75K", ">$75K"))
+
+ 
+    
+
+#table (ddat2$Income)
+#unique(ddat2$Income)
+
+# create some missing data points 
+# Define the percentage of missing values 
+missing_percentage <- 0.05
+
+# Get total number of rows
+total_rows <- nrow(ddat2)
+
+# Apply missing values to all variables
+ddat2 <- ddat2 %>%
+  mutate(across(everything(), ~ {
+    miss_id <- sample(1:total_rows, size = round(missing_percentage * total_rows), replace = FALSE)
+    .[miss_id] <- NA  # Assign NA to selected rows
+    .
+  }))
+
+# overall summary of variables
+#dfSummary(ddat2)
+
+#missing values data
+misingdat <- ddat2
+forMICE <- ddat2 # reserve data for MICE imputation
+
+
+
+#General Health binning
+ddat2$GenHlth_bin <- case_when(
+  ddat2$GenHlth %in% c("Poor", "Fair") ~ "Fair",  
+  ddat2$GenHlth %in% c("Good", "Very Good", "Excellent") ~ "Good",
+  TRUE ~ "Unknown"
+)
+
+# order factors
+ddat2$GenHlth_bin <- factor(ddat2$GenHlth_bin, levels = c("Fair", "Good", "Unknown"))
+
+
+
+# Categorize income variable
+ddat2 <- ddat2 %>%
+  mutate(Income_Quartile = ntile(Income_num, 4),  # Divide into 4 quartiles
+         Income_q = case_when(
+           Income_Quartile == 1 ~ "Low",
+           Income_Quartile == 2 ~ "Medium-Low",
+           Income_Quartile == 3 ~ "Medium-High",
+           Income_Quartile == 4 ~ "High"
+         ))
+
+
+ddat2$Income_q <- factor(ddat2$Income_q, levels = c("Low", "Medium-Low", "Medium-High", "High"))
+#table(ddat2$Income_q)
+
+
+#regroup age
+ddat2$Age_grp <- case_when(
+  ddat2$Age %in% c("18-24", "25-29", "30-34", "35-39", "40-44") ~ "Younger",  
+  ddat2$Age %in% c("45-49",  "50-54", "55-59", "60-64") ~ "Middle Age",
+  ddat2$Age %in% c("65-69", "70-74", "75-79", "80+") ~ "Older",
+  TRUE ~ "Unknown"
+)
+
+# Convert the Age_grp variable to a factor and set the levels in the desired order
+ddat2$Age_grp <- factor(ddat2$Age_grp, levels = c("Younger", "Middle Age", "Older", "Unknown"))
+#table(ddat2$Age , ddat2$Age_grp )
+#table( ddat2$Age_grp)
+
+#regroup education
+ddat2$Education_cat <- case_when(
+  ddat2$Education %in% c("No High School","Some High School" , "High School Graduate",  "Some College"  ) ~ "No College",  
+  ddat2$Education %in% c("College Graduate") ~ "College Graduate"
+  #TRUE ~ "Unknown"
+)
+
+ddat2$Education_cat <- factor(ddat2$Education_cat, levels = c("No College", "College Graduate"))
+
+#table(ddat2$Age , ddat2$Age_grp )
+#table( ddat2$Education_cat, useNA = "ifany")
+#table( ddat2$Education, useNA = "ifany")
+
+
+
+```
+
+
+
+## 2. Feature Transforming
+
+With only a few numeric variables in the data including number of days mental health was not good, number of days physical health was not good in past 30 days and BMI, very limited feature transformations were taken regarding these variables. Mental health and Physical health variables were negatively skewed and we applied box-cox transformation. However this transformation did not improve the distribution of the feature variables. Additional information is provided below on these transformation and other categorical feature variables (see Section 4 for categorical variables portion).
+
+
+```{r box,  fig.cap="Box-Cox Transformation", fig.align="center", fig.width=6, fig.height=6}
+
+# Ensure all values are positive (shift if necessary) to apply box-cox to mental health
+
+#table (ddat2$MentHlth)
+min_value <- min(ddat2$MentHlth, na.rm = TRUE)  # Ignore NA values
+if (min_value <= 0) {
+  ddat2$MentHlth <- ddat2$MentHlth + abs(min_value) + 1
+}
+
+library(MASS)
+# Perform Box-Cox transformation
+boxcox_result <- boxcox(lm(ddat2$MentHlth ~ 1), lambda = seq(-2, 2, 0.1))  # Fit a simple model
+
+# Find the optimal lambda
+lambda_optimal <- boxcox_result$x[which.max(boxcox_result$y)]
+lambda_optimal
+
+
+
+#Apply the transformation with the optimal lambda
+
+transformed_data <- if (lambda_optimal == 0) {
+  log(ddat2$MentHlth)
+} else {
+  (ddat2$MentHlth^lambda_optimal - 1) / lambda_optimal
+}
+
+pooledData <- data.frame(OriginalData=ddat2$MentHlth, TransformedData=transformed_data)
+## Reshape the data - stacking the values and assigning a variable ID.
+
+pooledData$ID <- 1:nrow(pooledData)  # Create an ID variable
+LongFormatData <- melt(pooledData, id.vars = "ID")  # Now ID is fixed
+
+
+
+```
+
+In **Figure \@ref(fig:box)**, the Box-Cox transformation is shown an obtimal lambda of -1.11 shows the larger values need to be compressed to help reduce the skewness of the data and make it more symmetric via a negative power transformation. 
+
+
+```{r mentalf, fig.cap="Original Mental Health Distribution vs Box-Cox Transformation ", fig.align="center", fig.width=8, fig.height=6}
+
+grp.col = c("navy", "darkred")
+names(grp.col) = levels(LongFormatData$variable)
+
+##
+ggp = ggplot(LongFormatData,aes(x=value, fill=variable, color = variable)) + 
+  geom_density(alpha=0.5, na.rm = TRUE) + 
+  scale_color_manual(values = c("red", "blue")) +
+  ggtitle("Distributions of Original and Transformed Data") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        legend.title = element_text(face = "bold", hjust = 0.5),
+        theme(legend.position.inside = c(.9, .75)))  
+#
+ggplotly(ggp)   # ggplotly's legend is always on top right by default!
+
+
+```
+
+
+
+
+In **Figure \@ref(fig:mentalf)**, the transfomed data distribution compared to the non-transformed data shows that the transformation did not transform the distribution meaningfully.  Because the **number of days mental health was not good** feature variable had a lot of zero values and sparse data for other values, we shifted the values by 1 prior to the box cox transformation. From these steps, we made the decision to bin the values into 4 groups for analysis. Similar features were observed in the number of days Physical health was not good. Similar binning was applied to this feature variable. See section 4 below for the binned graphs of these feature variables (Section 4).
+
+
+## 3. Feature Selection
+
+Using domain-knowledge appraoch and waht is known about diabetes and possible factors that are known as risk factors, we made the decision to include the following variables for further analysis - BMI groups, Sex, Smoke, HighBP, PhysHlth, Age, PhysActivity, Education, Income, and MentHlth will be included for analysis. No model-based analysis will be implemented here. 
+
+
+
+## 4. Feature Creation
+To create new variables that improve a model's predictive performance following the transformation information gained from the feature transformation section and EDA steps, the following feature variables were created. 
+
+
+
+```{r mentH}
+# bin mental health as featured variable
+breaks <- unique(quantile(ddat2$MentHlth, probs = seq(0, 1, length.out = 5), na.rm = TRUE)) # avoids non-unique breaks 
+ddat2$MentHlth_bin <- cut(ddat2$MentHlth, 
+                   breaks = breaks, 
+                   include.lowest = TRUE)
+
+
+ddat2$MentHlth_bin <- ntile(ddat2$MentHlth, 4)  # Divides into 4 groups
+mentab<- table (ddat2$MentHlth_bin)
+# Convert to data frame
+mentab <- as.data.frame(mentab)
+# Rename the column
+colnames(mentab)[colnames(mentab) == "Var1"] <- "Groups"
+colnames(mentab)[colnames(mentab) == "Freq"] <- "Count"
+kable(mentab, format = "html", caption = "Days of poor mental health groups")
+
+# bin Physical health as featured variable
+breaks <- unique(quantile(ddat2$PhysHlth, probs = seq(0, 1, length.out = 5), na.rm = TRUE)) # avoids non-unique breaks 
+ddat2$PhysHlth_bin <- cut(ddat2$PhysHlth, 
+                   breaks = breaks, 
+                   include.lowest = TRUE)
+
+
+ddat2$PhysHlth_Cat <- ntile(ddat2$PhysHlth_bin, 4)  # Divides into 4 groups
+phystab<-table (ddat2$PhysHlth_Cat)
+# Convert to data frame
+phystab <- as.data.frame(phystab)
+#View(phystab)
+# Rename the column
+colnames(phystab)[colnames(phystab) == "Var1"] <- "Groups"
+colnames(phystab)[colnames(phystab) == "Freq"] <- "Count"
+#kable(phystab, format = "html", caption = "Days of poor physical health")
+
+```
+
+
+
++ Mental and Phsycal Health Quartiles: Because of the box-cox transformation's failure to generate a normal distribution of the the feature variable, a new feature that bins the variable into 4 groups was created to generate groups that are similar and groups that are not sparse. See Table **\@ref(tab:mentH)**.
+
++  Income was re-categorized into low, medium-low, medium-high and high groups using the Income distribution during the EDA and feature transforming.
+
+```{r incomef, fig.cap='Income Group Comparisons (original vs new)', fig.align="center", fig.width=8, fig.height=6}
+
+# Compute Income proportions plot
+library(ggplot2)
+income_q2<-ggplot(na.omit(ddat2), aes(x = Income_q)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "brown", color = "black", width = 0.5) +
+  labs(title = "Proportion of Income Re-categorized",
+       x = "Income Category",
+       y = "Proportion") +
+  theme_minimal()
+
+income_q1<-ggplot(na.omit(ddat2), aes(x = Income)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "brown", color = "black", width = 0.5) +
+  labs(title = "Proportion of Income Categories",
+       x = "Income Category",
+       y = "Proportion") +
+  theme_minimal()+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+#table(ddat2$Income_num)
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(income_q1, income_q2, ncol = 2)
+
+```
+
+
+In the bar chart of Income groups shown in **Figure \@ref(fig:incomef)**, the feature was engineered such that the groups are reduced and the group proportions are not sparse in each group.
+
++ BMI: The research shows that the BMI is related to Diabetes and can be considered an important feature variable in further analysis. The original variable was normal with outliers at the right tail. Instead of transforming, we made the decision to use the WHO categorization of BMI groups but our data shown very low participants in the under weight group. We made the decision to create a new variable that uses quartiles to group the participants. 
+
+
+
+```{r, bmiq, fig.cap='BMI Groups Comparison (original vs new)' , fig.align="center", fig.width=8, fig.height=6}
+
+# bin BMI into quartiles
+ddat2$BMI_Quartile <- cut(ddat2$BMI, 
+                          breaks = quantile(ddat2$BMI, probs = c(0, 0.25, 0.50, 0.75, 1), na.rm = TRUE), 
+                          include.lowest = TRUE, 
+                          labels = c("Q1: Lowest", "Q2", "Q3", "Q4: Highest"))
+
+bmi1 <-ggplot(na.omit(ddat2), aes(x = BMI_Quartile)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "lightblue", color = "black", width = 0.5) +
+  labs(title = "BMI quartiles",
+       x = "BMI Quartiles",
+       y = "Proportion") +
+  theme_minimal() 
+
+bmi2 <-ggplot(na.omit(ddat2), aes(x = BMI_Cat)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "lightblue", color = "black", width = 0.5) +
+  labs(title = "BMI categories",
+       x = "WHO BMI categories",
+       y = "Proportion") +
+  theme_minimal() 
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(bmi2, bmi1, ncol = 2)
+
+#table (ddat2$Education)
+
+
+```
+
+
+In the BMI bar chart in **Figure \@ref(fig:bmiq)**, we see that the underweight had very low counts uing ghe WHO groupings for BMI. On the otherhand, when we used the quartiles, the groups did not contain spares data in the groups as in the original feature BMI variable. 
+
+ 
+
+
+```{r educ, fig.cap='Education Groups comaparison (original vs new)', fig.align="center", fig.width=8, fig.height=6}
+educ1<-ggplot(na.omit(ddat2), aes(x = Education)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "orange", color = "black", width = 0.5) +
+  labs(title = "Education Categories",
+       x = "Education Categories",
+       y = "Proportion") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+
+
+ddat2$Education_cat <- case_when(
+  ddat2$Education %in% c("No High School", "Some High School", "High School Graduate", "Some College") ~ "Non-Graduate",  
+  ddat2$Education %in% c("College Graduate") ~ "Graduate",
+  TRUE ~ "Unknown"
+)
+educ2<-ggplot(na.omit(ddat2), aes(x = Education_cat)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "orange", color = "black", width = 0.5) +
+  labs(title = "Education - Re-categorized",
+       x = "Education  Re-categorized",
+       y = "Proportion") +
+  theme_minimal()
+
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(educ1, educ2, ncol = 2)
+
+```
+
++ Education: Similarly, Edcuation was re-categorized by grouping  then into no gradate education and graduates. We notice sparse data in the original variable while the newly created variable that re-categorized the education variable shown more similar groups with the variable. 
+
+
++ Age: The original Age variable had multiple groups that had sparsed groups. Age was re-categorized into 3 groups to ensure these groups did not have severe imbalnces.
+
+
+```{r agef, fig.cap='Age group Comparison (original vs new)', fig.align="center" , results='hide', fig.width=8, fig.height=6}
+
+
+age1<-ggplot(na.omit(ddat2), aes(x = Age)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "pink", color = "black", width = 0.5) +
+  labs(title = "Age Categories",
+       x = "Age Categories",
+       y = "Proportion") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+
+
+age2<-ggplot(na.omit(ddat2), aes(x = Age_grp)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "pink", color = "black", width = 0.5) +
+  labs(title = "Age - Re-categorized",
+       x = "Age  Re-categorized",
+       y = "Proportion") +
+  theme_minimal()
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(age1, age2, ncol = 2)
+
+
+```
+
+
+In the Age Group bar chart in **Figure \@ref(fig:agef)**, we see that the re-categorized groups will ensure that underrepresented age groups are not present anymore. This will help in other analysis like aid in model interpretability. 
+
+In summary, these approaches will enhcance better predictive ability and lead to a good model that generalizes well. It will also reduce the risk of over fitting models since they will be built more on generic groups than specific ones. They will also reduce data imbalance in these variables. 
+
+

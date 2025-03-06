@@ -1,0 +1,1645 @@
+---
+title: "Identification of Risk Factors and Prediction of Diabetes in the USA"
+subtitle: "An Analysis of Contributing Factors and Predictive Modeling"
+author: "Author: Mercy Atuahene" 
+date: "Date: March 05, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 20px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h3.subtitle {  
+    font-size: 18px;  
+    font-weight: bold;  
+    color: darkred;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 16px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 16px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+div.affiliation {  
+    font-size: 14px;  
+    font-style: italic;  
+    color: DarkSlateGray;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+
+
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+h5 { /* Header 5 - font specifications of level 5 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(dplyr)
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+library(bookdown)
+library(MASS)
+
+```
+
+# Abstract
+This study examines the relationships among health indicators and diabetes prevalence via exploratory data analysis and predictive modeling. Using a cross-sectional sample from the Diabetes Health Indicators dataset (BRFSS 2015), we first employ visualization techniques to explore individual variable distributions and analyze associations between key factors such as diabetes status and BMI. To predict diabetes risk, we implement logistic regression while handling missing data through the MICE imputation method. Additionally, we utilize linear regression to investigate the relationship between various risk factors and Hemoglobin A1C, a key biomarker for diabetes measurement. Our findings confirm that higher BMI is a significant risk factor for diabetes. The predictive model effectively distinguishes between diabetic and non-diabetic individuals, demonstrating strong discriminating performance (AUC = **0.772**). Insights from this study can help public health and policy professionals develop targeted educational campaigns on the risks of diabetes associated with BMI. Policies promoting physical activity should be prioritized across all age groups, particularly for older individuals.
+
+
+
+# Introduction
+  In the USA, diabetes impacts over 37 million Americans and 1 in 5 people with diabetes do not know they have it according to the CDC. Over 38% of the US population have pre-diabetes - a condition that increases the risk of developing type 2 diabetes. It is one of the most prevalent chronic diseases in the US <a   href="https://www.cdc.gov/pcd/issues/2019/19_0109.htm" target="_blank"> Xie et al (2019)</a>. This presents a public health issue that has economic burdens, increased mortality rates and other health complications. It is estimated that the economic burden of diabetes in the US is about $327 billion annually with the cost of care on the rise. With a rise in the number of diabetes cases in recent years and its economic burden, understanding of risk factors driving these numbers are essential to enable policies that intervene on this national health crises. 
+  
+  Based on this background, understanding the important risk factors that contribute to developing diabetes will provide public health avenues to intervene where appropriate and possible - example include lifestyle changes that can help prevent the disease. Additionally, a predictive tool that can provide some clinical information about the likeliness of the condition based on risk factors will be a tool that significantly supports clinicians in providing the best an most appropriate route of care for the public.
+  
+  Tracking of cases by the  Behavioral Risk Factor Surveillance System (BRFSS) is one way the US is using to curb diabetes prevalence and its associated risk factors and also to intervene on modifiable lifestyle choices. For additional information on diabetes, visit <a href="https://www.cdc.gov/diabetes/about/index.html?utm_source=chatgpt.com#cdc_disease_basics_quick_facts_callout_callout-diabetes-by-the-numbers" target="_blank">Diabetes Basics</a>. 
+
+
+
+# Data Overview
+
+## Description of Data
+The BRFSS is a telephone survey conducted annually by the Center For Disease Control and Prevention (CDC) to collect uniform, state-specific data on US adults' health-related risk behaviors, chronic health conditions like diabetes, and use of preventive services. The focus of the survey is to collect data on demographics and social determinants of health, mental health and well being, health risk behaviors, chronic health conditions and use of preventive services in the United States population. It is an important system that helps public health personnel to design policies and health programs that benefits states and local agencies. Data from the system and the current analysis is utilized in the identification of risk factors that contribute to chronic diseases and health disparities among different populations, etc. We will particularity, explore the ability to identify which feature variables in the data are associated with diabetes either alone or in combination with other risk factors and also use advance methods in machine learning to accurately predict which individuals have diabetes based on the risk factors reported in the literature. 
+
+  We will use the 2015 BRFSS data in our exploratory analysis of the feature variables in this dataset. The dataset contains clean data originating from the original dataset which contained 441, 455 individuals and has 330 features. The clean version contains 253,680 survey responses from the CDC's BRFSS 2015. It contains 21 feature variables and obtained from the kaggle website <a   href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?utm_source=chatgpt.com&select=diabetes_b   inary_health_indicators_BRFSS2015.csv" target="_blank">Diabetes Health Indicators Dataset</a>.
+  In the data preparation, we assigned meaningful labels to the feature variables using the codebook for the dataset. Our dataset contained complete data for all feature variables with non-missing values from the source data. However, for the purpose of this analysis, we demonstrate the impact of missingness as part of our data processing by randomly assigning missing data. 
+
+
+
+```{r cleandata, results='hide'}
+# get data into R
+
+#ddat0 <- read.csv("/Users/mkatuahene/Desktop/WCU/R-Machine Learning/Assignment/Week 2/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+ddat <- read.csv("https://matuahene.github.io/STA552/Week%202/diabetes_binary_health_indicators_BRFSS2015.csv", skip=0)
+
+
+#remove duplicates based on all columns
+df_clean <- ddat[!duplicated(ddat), ]
+dups<-ddat[duplicated(ddat), ]
+ddat<-df_clean
+
+
+# Categorize income variable
+ddat$Income_cat <- cut(ddat$Income, 
+                                    breaks = c(-Inf, 3, 5, 6, Inf), 
+                                    labels = c("Low", "Medium", "High", "Very High"))
+
+ddat$GenHlth2 <- ddat$GenHlth
+ddat$Income_num <- ddat$Income
+
+ddat2 <-ddat
+
+# assign meaningful labels to Age
+ddat2$Age <- factor(ddat2$Age, 
+  levels = 1:13, 
+  labels = c("18-24", "25-29", "30-34", "35-39", "40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80+"))
+
+# BMI categories
+ddat2 <- ddat2 %>%
+  mutate(BMI_Cat = cut(BMI, 
+                            breaks = c(0, 18.5, 24.9, 29.9, Inf), 
+                            labels = c("Underweight", "Normal", "Overweight", "Obese")))
+# YES/NO labels
+ddat2 <- ddat2 %>%
+  mutate(
+    HighChol = recode(HighChol, "0" = "No", "1" = "Yes"),
+    HighBP = recode(HighBP, "0" = "No", "1" = "Yes"),
+    Smoker = recode(Smoker, "0" = "No", "1" = "Yes"),
+    Stroke = recode(Stroke, "0" = "No", "1" = "Yes"),
+    HeartDiseaseorAttack = recode(HeartDiseaseorAttack, "0" = "No", "1" = "Yes"),
+    PhysActivity = recode(PhysActivity, "0" = "No", "1" = "Yes"),
+    Fruits = recode(Fruits, "0" = "No", "1" = "Yes"),
+    Veggies = recode(Veggies, "0" = "No", "1" = "Yes")
+  )
+
+
+#Diabetes status, Education and Income, etc labels
+ddat2 <- ddat2 %>%
+  mutate(
+    Education = recode(Education, 
+                       "1" = "No High School", 
+                       "2" = "Some High School", 
+                       "3" = "High School Graduate", 
+                       "4" = "Some College", 
+                       "5" = "College Graduate",
+                       "6" = "College 4 years or more"),
+    Education = factor(Education, 
+                    levels = c("No High School","Some High School", "High School Graduate", 
+                               "Some College", "College Graduate","College 4 years or more"),
+                    ordered = TRUE),  # Convert to ordered factor    
+    Income = recode(Income, 
+                    "1" = "<$10K", 
+                    "2" = "$10K-<$15K", 
+                    "3" = "$15K-<$20K", 
+                    "4" = "$20K-<$25K", 
+                    "5" = "$25K-<$35K", 
+                    "6" = "$35K-<$50K",
+                    "7" = "$50K-<$75K", 
+                    "8" = ">$75K",
+                    .default = "Unknown"),
+
+    Income = factor(Income, 
+                    levels = c("<$10K", "$10K-<$15K", "$15K-<$20K", "$20K-<$25K",
+                               "$25K-<$35K", "$35K-<$50K", "$50K-<$75K", ">$75K"),
+                    ordered = TRUE),  # Convert to ordered factor
+   Sex = recode(Sex, 
+                  "1" = "Male", 
+                  "0" = "Female",
+                .default = "Unknown"),
+   CholCheck = recode(CholCheck,
+                      "1" = "Yes",
+                      "0" = "No" ),
+   
+   DiffWalk = recode(DiffWalk,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  
+   AnyHealthcare = recode(AnyHealthcare,
+                      "1" = "Yes",
+                      "0" = "No" ),
+
+   NoDocbcCost = recode(NoDocbcCost,
+                      "1" = "Yes",
+                      "0" = "No" ),
+  HvyAlcoholConsump = recode(HvyAlcoholConsump,
+                      "1" = "Yes",
+                      "0" = "No" ),
+    Diabetes_binary = recode(Diabetes_binary, 
+                            "0" = "No Diabetes", 
+                            "1" = "Has Diabetes"),
+  
+  GenHlth = recode(GenHlth,
+                  "1" = "Excellent",
+                   "2" = "Very Good",
+                   "3" = "Good",
+                   "4" = "Fair",
+                   "5" = "Poor"),
+   GenHlth = factor(GenHlth, 
+                    levels = c("Poor", "Fair", "Good", 
+                               "Very Good", "Excellent"),
+                    ordered = TRUE),  # Convert to ordered factor
+  )
+
+
+nonemiss_dat<-ddat2
+
+
+```
+
+
+
+
+## Feature Variables
+
+  The clean dataset (BRFSS2015) contains the following features:
+  
+   * **Target feature variable:** a categorical feature indicating if an individual has diabetes or not, Diabetes_binary (0 = no diabetes, 1 = prediabetes or diabetes)
+   
+   * **Independent feature variables**
+     + HighBP: a categorical feature (0 = no high BP, 1 = high BP)
+     + HighChol: a categorical feature that indicates if an individual has high cholesterol (1 = Yes, 0 = No)
+     + CholCheck: a categorical feature that indicates if an individual had their cholesterol checked in the past five years (1 = Yes, 0 = No)
+     + BMI: Body Mass Index,a continuous numerical feature based on the measure of body fat based on height and weight
+     + Smoker: a categorical feature that indicates if an individual has smoked at least 100 cigarettes in their lifetime (1 = Yes, 0 = No)
+     + Stroke: a categorical feature that indicates if an individual has had a stroke (1 = Yes, 0 = No)
+     + HeartDiseaseorAttack: a categorical feature that indicates if an individual has coronary heart disease or a heart attack (1 = Yes, 0 = No)
+     + PhysActivity: a categorical feature that indicates if an individual has engaged in physical activity in the past 30 days (1 = Yes, 0 = No)
+     + Fruits: a categorical feature that indicates if the individual consumes fruits at least once per day (1 = Yes, 0 = No)
+     + Veggies: a categorical feature that indicates if the individual consumes vegetables at least once per day (1 = Yes, 0 = No)
+     + HvyAlcoholConsump: a categorical feature that indicates heavy alcohol consumption (1 = Yes, 0 = No)
+     + AnyHealthcare: a categorical feature that indicates if the individual has any kind of health care coverage (1 = Yes, 0 = No)
+     + NoDocbcCost: a categorical feature that indicates if the individual could not see a doctor due to cost in the past 12 months (1 = Yes, 0 = No)
+     + GenHlth: a categorical feature that indicates General health status (1 = Excellent, 2 = Very good, 3 = Good, 4 = Fair, 5 = Poor)
+     + MentHlth: a numerical feature representing the number of days mental health was not good in the past 30 days
+     + PhysHlth: a numerical numerical feature representing the number of days physical health was not good in the past 30 days
+     + DiffWalk: a categorical indicates if the individual has serious difficulty walking or climbing stairs (1 = Yes, 0 = No)
+     + Sex: a categorical feature that indicates the gender of an individual (1 = Male, 0 = Female)
+     + Age: a categorical feature representing the age category of the individual (1 = 18–24, 2 = 25–29, 3 = 30–34, 4 = 35–39, 5 = 40–44, 6 = 45–49, 7 = 50–54, 8 = 55–59, 9 =  60–64, 10 = 65–69, 11 = 70–74, 12 = 75–79, 13 = 80 or older)
+     + Education: a categorical variable that indicates Education level of the individual (1 = Never attended school or only kindergarten, 2 = Grades 1 through 8 (Elementary), 3 = Grades 9 through 11 (Some high school, no diploma), 4 = Grade 12 or GED (High school graduate), 5 = College 1 to 3 years (Some college or technical school), 6 = College 4 years or more (College graduate) )
+     + Income: a categorical variable that indicates Income category of the individual ( 1 = Less than $10,000, 2 =  $10,000 to $14,999, 3 = $15,000 to $19,999, 4 = $20,000 to $24,999, 5 = $25,000 to $34,999, 6 = $35,000 to $49,999, 7 = $50,000 to $74,999, 8 = $75,000 or more)
+
+
+
+
+## Descriptive Statistics
+
+A general overview of the sample data that summarizes the mean, standard deviation, and mean of numeric variables are provided below and in **Table \@ref(tab:overtab) **. Frequency counts and corresponding percentages are provided for categorical variable features as well. We can see that, overall, diabetic patients had a higher BMI on average than non-diabetics. 
+
+```{r overalltab}
+
+#Present descriptives before creatign misssingness
+# Ensure categorical variables are factors
+ddat <- ddat2 %>%
+  mutate(across(c(Sex, Smoker, Stroke, HighBP, CholCheck, 
+                  HeartDiseaseorAttack, GenHlth, HvyAlcoholConsump, 
+                  AnyHealthcare, Income,  Education, Diabetes_binary), as.factor))
+
+overalltab<-table1(~BMI+Sex+Smoker+Stroke+HighBP+CholCheck+HeartDiseaseorAttack+GenHlth
+                   +HvyAlcoholConsump+CholCheck+AnyHealthcare+Income+Education|Diabetes_binary,  
+       data=ddat2,
+       caption="Table 1: Descriptive Statistics showing select categorical feature variables with missing data (count/percentages)", 
+       footnote="Data source:BRFSS Diabetes Dataset", topclass="Rtable1-zebra")
+
+
+library(tableone)
+
+# Define Table 1
+overalltab2 <- CreateTableOne(vars = c("Sex", "Smoker", "Stroke", "HighBP", 
+                                      "CholCheck", "HeartDiseaseorAttack", 
+                                      "GenHlth", "HvyAlcoholConsump", 
+                                      "AnyHealthcare", "Income", "Education"), 
+                             strata = "Diabetes_binary",  # Stratified by Diabetes status
+                             data = ddat2, 
+                             test = TRUE)
+
+# Print Table 1 with indentation
+#kable(print(overalltab2, quote = FALSE))
+
+
+# create some missing data points 
+# Define the percentage of missing values 
+missing_percentage <- 0.05
+
+# Get total number of rows
+total_rows <- nrow(ddat2)
+
+# Apply missing values to all variables
+ddat2 <- ddat2 %>%
+  mutate(across(everything(), ~ {
+    miss_id <- sample(1:total_rows, size = round(missing_percentage * total_rows), replace = FALSE)
+    .[miss_id] <- NA  # Assign NA to selected rows
+    .
+  }))
+
+# overall summary of variables
+sumdata<-dfSummary(ddat2)
+
+#missing values data
+misingdat <- ddat2
+forMICE <- ddat2 # reserve data for MICE imputation
+
+```
+
+
+```{r overtab}
+kable(overalltab, caption = 'Descriptive Statistics for BRFSS Diabetes Dataset')
+```
+
+Also in **Table \@ref(tab:overtab) **, there were more people with high blood pressure in the diabetic group as well as those with high cholesterol.Across all general health groups, there were more people in the diabetic group than in the non-diabetic group except in the very good and excellent groups which had more non-diabetic groups than diabetic groups. Similarly, a higher percentage of those earning less than $35,000 were diabetic and percentage of those with less education were in the diabetic group. Together they provide insights into some of the variables that me be considered as important feature variables. The table also provides information about some subgroups with very small number of participants in those groups. Note: Age groups are not here due to several categories in the raw data presented but Age will be considered in further analysis as there is literature that supports older age been associated with diabetes.
+
+
+\
+
+
+\
+
+# Exploratory Data Analysis (EDA)
+
+## Distribution of Feature Variables
+
+To prepare the dataset for our analysis purpose, we removed duplicates based on all columns present in the dataset and the data records reduced from 253,680 to 229,474, and we utilized the sample function to create some missingness in our dataset for the purpose of demonstrating real-world representation of data. We randomly replaced 5% of all feature variables with missing values to make the dataset represent real world data which is often observed with missing values in variables.  It is important to point out that since this is an already cleaned dataset, there are not much to be done in addressing issues like unlikely values ( extreme height or weight, etc, non standard response to questionnaires among others). We will utilize exploratory data analysis to uncover patterns and relationships in the dataset. Feature engineering will be applied where applicable to create new variables and a visual representation of the data will be provided to identify trends and feature variable distributions. Additionally, sub group visualizations will be presented that enlightens our understanding of how diabetes affects certain groups of people and which feature variables are associated with diabetes. 
+
+
+
+
+
+
+```{r bmiplot, fig.cap="Histogram and Bar plots of BMI", fig.align="center"}
+# get data into R
+#BMI variable
+bmi1 <- ggplot(ddat2, aes(x = BMI)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "With outliers", x = "BMI", y = "Count") +
+  theme_minimal()
+
+#check skewness of BMI
+#skewness(ddat2$BMI, na.rm=TRUE) 
+#skewness(ddat2$BMI, na.rm=TRUE) 
+
+# remove BMI outliers
+Q1 <- quantile(ddat2$BMI, 0.25, na.rm = TRUE)
+Q3 <- quantile(ddat2$BMI, 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+
+# Define acceptable range
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+# Remove outliers
+ddat3 <- ddat2[ddat2$BMI >= lower_bound & ddat2$BMI <= upper_bound, ]
+
+
+
+#plot of BMI with outliers removed: ddat3 now contains data with no outliers
+bmi12 <- ggplot(ddat3, aes(x = BMI)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "No outliers", x = "BMI", y = "Count") +
+  theme_minimal()
+
+#categorized BMI bar chart
+bmigrp<- ggplot(ddat3 %>% filter(!is.na(BMI_Cat)), aes(x = BMI_Cat)) +
+  geom_bar(fill = "steelblue", alpha = 0.7) +
+  labs(title = "BMI Categories",
+       x = "BMI category",
+       y = "Count"
+       ) +
+  theme_classic() +
+  scale_x_discrete(guide = guide_axis(angle = 30), labels = function(x) str_wrap(x, width = 6)) # Auto-wrap text
+  
+#bmigrp
+#only show figures of interest in report
+grid.arrange(bmi1,bmi12,bmigrp, ncol = 3, top = textGrob("", gp = gpar(fontsize = 14, fontface = "bold"))) 
+
+
+```
+
+
+\
+
+* **Individual analytic tasks** -
+\
+  The following feature variables comprise of some of the risk factors that are reported to be associated with diabetes that will be explored in this study.
+  + **BMI**: In **Figure \@ref(fig:bmiplot)**, BMI histogram showed positively skewed data while a box plot also showed outliers. The outliers were removed from the dataset that were 1.5 times lower or higher than the first and third quartiles. The plot of the data without the outliers showed a symmetrical distribution.
+    BMI was re-categorized into Underweight, Normal, Overweight and Obese to help identify at risk populations, for easier interpretation of the data and for trend identification. Over 70% of the sample were either overweight or obese. It was apparent that most of the participants where either over weight or obese.
+
+
+
+
+```{r selectplot, results='hide', fig.cap="Selected Indpendent Feature Variable Plots", fig.align="center", fig.width=12, fig.height=12}
+
+# Define a function to replace outliers with the mean
+replace_outliers_with_mean <- function(x) {
+  Q1 <- quantile(x, 0.25, na.rm = TRUE)
+  Q3 <- quantile(x, 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  
+  # Define lower and upper bounds
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  
+  # Replace outliers with the mean
+  x[x < lower_bound | x > upper_bound] <- mean(x, na.rm = TRUE)
+  
+  return(x)
+}
+
+# Apply the function to mental health to replace outliers with mean value
+ddat3$MentHlth <- replace_outliers_with_mean(ddat3$MentHlth)
+
+#Physical Health histogram
+Ph  <- ggplot(ddat3, aes(x = PhysHlth)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Physical Health Days", x = "Days", y = "Count") +
+  theme_minimal()
+#Ph
+
+# Apply the function to mental health to replace outliers with mean value
+ddat3$PhysHlth <- replace_outliers_with_mean(ddat3$PhysHlth)
+
+#categorized General Health bar chart
+ddat3 <- ddat3 %>%
+  mutate(GenHlth = factor(GenHlth, 
+                          levels = c("Poor", "Fair", "Good", "Very Good", "Excellent"), 
+                          ordered = TRUE))  
+
+Gh <- ggplot(ddat3 %>% filter(!is.na(GenHlth)), aes(x = GenHlth, y = ..prop.., group = 1)) +
+  geom_bar(fill = "pink1", width =0.7) +
+  labs(title = "General Health Status",
+       x = "General Health",
+       y = "Percent"
+       ) +
+  scale_x_discrete(expand = c(0.1, 0.1))+
+  theme_classic()
+#Gh
+
+# Diabetes Status
+diabetes_plot<-ggplot(ddat3 %>% filter(!is.na(Diabetes_binary)), aes(x = factor(Diabetes_binary), y = ..prop.., group = 1)) +
+  geom_bar(fill = "yellow3" , width = 0.4) +
+  labs(title = "Diabetes Status",
+       x = "Diabetes Status",
+       y = "Percent"
+       ) +
+  theme_classic()
+#+theme(plot.margin = margin(2, 2, 2, 2) )
+
+#Percentages within diabetes
+Diab.percentages <- ddat3 %>%
+  count(Diabetes_binary) %>%
+  mutate(Percentage = n / sum(n) * 100)
+Diab.percentages
+
+#Mental Health Variables
+menh2  <- ggplot(ddat3, aes(x = MentHlth)) +
+  geom_histogram(binwidth = 2, fill = "orchid3", color = "black", alpha = 0.7) +
+  labs(title = "Histogram of not good mental health days", x = "Days", y = "Count") +
+  theme_minimal()
+
+
+#sex plot
+sex_plot <-ggplot(ddat3 %>% filter(!is.na(Sex)), aes(x = factor(Sex), y = ..prop.., group = 1)) +
+  geom_bar(fill = "brown" , width = 0.4) +
+  labs(title = "Bar plot of Gender Distribution",
+       x = "Gender",
+       y = "Percent"
+       ) +
+  theme_classic()
+
+#smoke plot
+smoke_plot  <- ggplot(ddat3 %>% filter(!is.na(Smoker)), aes(x = factor(Smoker), y = ..prop.., group = 1)) +
+  geom_bar(fill = "lightblue" , width = 0.4) +
+  labs(title = "Bar plot of Smokers Distribution",
+       x = "Smoker",
+       y = "Percent"
+       ) +
+  theme_classic()
+
+
+# Age Groups
+Age_plot <- ggplot(ddat3 %>% filter(!is.na(Age)), aes(x = Age, y = ..prop.., group = 1)) +
+  geom_bar(fill = "deepskyblue") +
+  labs(title = "Age group Bar Chart",
+       x = "Age Group",
+       y = "Percent"
+       ) +
+  theme_classic()
+#Age
+
+
+#set layout structure
+layout <- matrix(c(1, 2, 
+                   3, 4,
+                   5, 6,
+                   7, 7
+                   ), ncol = 2, byrow = TRUE)
+
+#set all plots
+grid.arrange(diabetes_plot, smoke_plot, sex_plot,Gh,Ph, menh2, Age_plot, 
+              layout_matrix = layout, 
+             top = textGrob("Plots of Select Feature Variables", 
+                            gp = gpar(fontsize = 16, fontface = "bold"))) 
+
+
+
+
+#calculate some percentages
+Age.percentages <- ddat %>%
+  count(Age) %>%
+  mutate(Percentage = n / sum(n) * 100)
+Age.percentages
+
+# Education
+Edu.percentages <- ddat %>%
+  count(Education) %>%
+  mutate(Percentage = n / sum(n) * 100)
+Edu.percentages
+
+# Smoker
+Smoke.percentages <- ddat %>%
+  count(Smoker) %>%
+  mutate(Percentage = n / sum(n) * 100)
+Smoke.percentages
+
+# Stroke
+Stroke.percentages <- ddat %>%
+  count(Stroke) %>%
+  mutate(Percentage = n / sum(n) * 100)
+Stroke.percentages
+
+```
+
+  + **Diabetes Status**: In the sample, majority of the participants did not have diabetes(86%). Only a smaller proportion were diabetic or had pre-diabetes, implying low prevalence of diabetes in our sample. See **Figure \@ref(fig:selectplot)**.
+  + **Smoker**: In  **Figure \@ref(fig:selectplot)**, about 44% of the participants smoked at least 100 cigarettes in their entire lifetime. Considering how smoking affects our health and with such many in the sample, controlling for this variable in our analysis and exploring how this variable interacts with others to impact diabetes will be studied.
+ + **Sex**: More females participated in the sample data than males.  See **Figure \@ref(fig:selectplot)**.
+ + **General Health Status**: Most people reported very good or good overall health status with skewness observed towards poor health. No special changes was be applied to the variable. 
+   
+  + **Mental Health**: Histogram and density plots showed less people had few days with poor mental health in the last 30 days (mean = approximately 3 days of bad mental health days). Outliers were replaced with mean values.
+  + **Physical Health in last 30 days** distribution showed outliers and these values were replaced with the mean.
+  
+  + **Age**:From **Figure \@ref(fig:selectplot)**, distribution of age was such that majority of participants were beyond 40 years old. This suggests that most participants were older and age should     controlled for in any analysis using this data.
+  
+  
+  
+
+```{r income, results='hide', fig.cap="Selected Indpendent Feature Variable Plots II", fig.align="center", fig.width=8, fig.height=6}
+
+# Income Status
+income_plot<-ggplot(ddat3 %>% filter(!is.na(Income)), aes(x = factor(Income), y = ..prop.., group = 1)) +
+  geom_bar(fill = "yellow3" , width = 0.4) +
+  labs(title = "Income Status",
+       x = "Income Status",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+
+#Education  Variable
+Educplot  <-ggplot(ddat3 %>% filter(!is.na(Education)), aes(x = factor(Education), y = ..prop.., group = 1)) +
+  geom_bar(fill = "lightblue" , width = 0.4) +
+  labs(title = "Education Status",
+       x = "Education Status",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+
+#BP plot
+hbp_plot <-ggplot(ddat3 %>% filter(!is.na(HighBP)), aes(x = factor(HighBP), y = ..prop.., group = 1)) +
+  geom_bar(fill = "brown" , width = 0.4) +
+  labs(title = "Bar plot of High Blood Pressure Distribution",
+       x = "High Blood Pressure",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+#Heavy Alcohol Consumption plot
+Alcohol_plot  <- ggplot(ddat3 %>% filter(!is.na(HvyAlcoholConsump)), aes(x = factor(HvyAlcoholConsump), y = ..prop.., group = 1)) +
+  geom_bar(fill = "lightblue" , width = 0.4) +
+  labs(title = "Bar plot of Heavy Alcohol Consumption",
+       x = "Heavy Drinker",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+
+# Anyhealth care 
+anyhealth_plot <- ggplot(ddat3 %>% filter(!is.na(AnyHealthcare)), aes(x = AnyHealthcare, y = ..prop.., group = 1)) +
+  geom_bar(fill = "deepskyblue", width = 0.4) +
+  labs(title = "HealthCare Bar Chart",
+       x = "Any Health Care Group",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+# Hearth Disease or Attack  
+heart_plot <- ggplot(ddat3 %>% filter(!is.na(HeartDiseaseorAttack)), aes(x = HeartDiseaseorAttack, y = ..prop.., group = 1)) +
+  geom_bar(fill = "brown", width = 0.4) +
+  labs(title = "Heart Disease/Attack Bar Chart",
+       x = "Heart Disease/Attack",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+# stroke 
+stroke_plot <- ggplot(ddat3 %>% filter(!is.na(Stroke)), aes(x = Stroke, y = ..prop.., group = 1)) +
+  geom_bar(fill = "red", width = 0.4) +
+  labs(title = "Stroke Bar Chart",
+       x = "Stroke",
+       y = "Proportion"
+       ) +
+  theme_classic()
+
+#set layout structure
+layout <- matrix(c(1, 1, 
+                   2, 2,
+                   3, 4,
+                   5, 6
+                   ), ncol = 2, byrow = TRUE)
+
+#set all plots
+grid.arrange(income_plot, Educplot, hbp_plot,Alcohol_plot,anyhealth_plot, heart_plot, 
+              layout_matrix = layout, 
+             top = textGrob("Plots of Select Feature Variables", 
+                            gp = gpar(fontsize = 16, fontface = "bold"))) 
+
+
+
+```
+
+  
+  + In **Figure \@ref(fig:income)**, income variable was negatively skewed. Most participants earned higher income. The variable was categorized into Low, Medium, and High income levels.
+  + **Education**: Most of the participants had a high school diploma or higher (over 80%). 
+  + High blood Pressure and High Cholesterol: More participants did not have high blood pressure or have any cholesterol checks in the last 5 years.(see  **Figure \@ref(fig:income)**) 
+
+  + **Heavy Alcohol consumption** - both men and women reported they are not heavy drinkers but these could be incorrect representation due to the fact that they may report as not heavy drinkers for socially desirable responses and expectations. The analysis will be conducted for men and women separately and for those who reported as heavy drinkers to uncover hidden relations. An overall overview will also be presented. 
+  
+  + **Heart disease/attack** was not prevalent in our sample. But we know that diabetes impacts heart function and it will be interesting to see if those who had diabetes reported having any of these conditions.  See  **Figure \@ref(fig:income)** for distribution of heavy drinking and heart disease or attack.
+  
+  + **Stroke**: Most people had never been told they had diabetes (95%). 
+  + **Other variables**: Most people did not have difficulty walking up the stairs, were physically active in the past 30 days (See **Figure \@ref(fig:selectplot)**), had some form of health insurance and could see a doctor when needed, consumed vegetables once or more times a day, but slightly more did not consume fruits at the same rate as vegetables.
+
+
+
+\
+
+##  Bivariate Relationship between Feature Variables 
+
+\
+We will now explore and have visualizations of relationships among several variables in our sample data. We will be looking at visuals for two or more numerical feature variables, categorical variables and visuals that look combinations of these to aid in our understanding of the data and how it influences our understanding of how to approach analysis of the data. 
+
+
+
+
+```{r bivariate, fig.cap="Bivariate Plots", fig.align="center" , results='hide', fig.width=8, fig.height=8}
+########## two variable relationships
+
+# diabetes and BMI
+ 
+bivar1<-ggplot(ddat3%>% filter(!is.na(Diabetes_binary)), aes(x = factor(Diabetes_binary), y = BMI, fill = factor(Diabetes_binary))) +
+  geom_boxplot() +
+  labs(title = "BMI Distribution by Diabetes Status",
+       x = "Diabetes Status",
+       y = "BMI") +
+  scale_fill_manual(values = c("plum", "steelblue")) +
+  theme_classic()+
+  theme(legend.title = element_blank())
+
+bivar2<-ggplot(ddat3%>% filter(!is.na(Diabetes_binary)), aes(x = BMI, fill = factor(Diabetes_binary))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "BMI Density Plot by Diabetes Status",
+       x = "BMI",
+       y = "Density") +
+  scale_fill_manual(values = c("plum", "steelblue")) +
+  theme_minimal()+
+  theme(legend.title = element_blank())
+
+
+
+#diabetes and physical health
+
+bivar3<-ggplot(ddat3%>% filter(!is.na(Diabetes_binary) & !is.na(PhysActivity)), aes(x = factor(Diabetes_binary), fill = factor(PhysActivity))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Grouped Bar Plot of Diabetes Status and Physical Activity in pas 30 days",
+       x = "Diabetes Status",
+       y = "Count") +
+  scale_fill_manual(values = c("blue", "plum", "steelblue")) +
+  guides(fill = guide_legend(title = "Pysically Active last 30 days")) +
+  theme_classic()
+  
+
+#colnames(ddat3)
+
+#set layout structure
+layout <- matrix(c(1, 1, 
+                   2, 2,
+                   3, 3
+                   ), ncol = 2, byrow = TRUE)
+
+#set all plots
+grid.arrange(bivar1, bivar2, bivar3, 
+              layout_matrix = layout, 
+             top = textGrob("Bivariate Plots", 
+                            gp = gpar(fontsize = 16, fontface = "bold"))) 
+
+```
+
+
+  + **Diabetes and BMI plots** : In  **Figure \@ref(fig:bivariate)**, the box plot showing the diabetes and BMI plot shows the median BMI in the diabetic group is higher suggests relationship between these 2 variables. Additionally, the density plot shows higher BMI in the diabetic group than the non-diabetic group.
+  + **Diabetes and Physical Activity plot**: The bivariate plot shows that while the distribution of physical activity in the past 30 days is similar, far less diabetic people were physically active in the last 30 days (see  **Figure \@ref(fig:bivariate)**).
+
+
+
+\
+
+## Relationship between Features - Multivariate 
+
+To understand the inter-relations among features variables, multivariate presentation of the features will help elucidate how to select features for predictive modeling. It also help understand how variables interact by identifying clusters or correlations. The following shows some multivariate plots in or sample.
+
+
+```{r corrplot, fig.cap="Multivariate Plots", fig.align="center" , results='hide',  fig.width=6, fig.height=4}
+#correlation plot of numerical variables
+library(ggcorrplot)
+library(dplyr)
+select_vars <- c("PhysHlth", "MentHlth", "GenHlth2", "BMI")
+#corr_matrix <- cor(ddat %>% select(all_of(select_vars)), use = "complete.obs")
+corr_matrix <- cor(ddat %>% dplyr::select(all_of(select_vars)), use = "complete.obs")
+
+# Convert matrix to long format
+corr_melt <- melt(corr_matrix)
+
+# Plot heatmap
+# Plot with text labels
+cor1 <- ggplot(corr_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4) +  # Add values
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Correlation Heatmap", fill = "Correlation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#install.packages("corrplot")
+library(corrplot)
+
+corrplot(corr_matrix, method = "color", type = "upper",
+         col = colorRampPalette(c("blue", "white", "red"))(200),
+         tl.cex = 0.7, tl.col = "black",
+         addCoef.col = "black", number.cex = 0.8)  # Add values
+
+```
+
+
+**Figure \@ref(fig:corrplot)**, shows that the mental health and generalhealth are positively correlated as well as mental health and physical health. Correlation between BMI and general health was only mildly correlated. 
+
+
+
+```{r lastone, fig.cap="Multivariate Plots", fig.align="center" , results='hide',  fig.width=6, fig.height=4}
+library(ggplot2)
+library(plotly) 
+mycolors <- c("Low" = "red", "Medium" = "orange", "High" = "magenta", "Very High" = "blue")
+
+ggplotly_density <- ddat3%>% filter(!is.na(Income_cat) & !is.na(Diabetes_binary))  %>% 
+  ggplot(aes(x = BMI, color = Income_cat, fill = Income_cat)) +
+  geom_density(linewidth = 0.75, alpha = 0.6) +
+  xlab("BMI Index") + 
+  labs(color = "Income Groups", fill = "Income Groups") +
+  ggtitle("Density Curve of BMI across Income Groups") +
+  scale_color_manual(values = mycolors) +  # Custom line colors
+  scale_fill_manual(values = mycolors) +  # Custom fill colors
+           theme(plot.margin = unit(c(2,1,2,1), "cm"),
+                plot.title = element_text(hjust = 0.5))  + 
+  facet_wrap(~ Diabetes_binary)  # Split by diabetes status
+
+print(ggplotly_density)
+ggplotly(ggplotly_density)
+
+
+```
+
+```{r lastonen, fig.cap="Multivariate Plots", fig.align="center" , results='hide',  fig.width=6, fig.height=4}
+mycolors.n <- c("Poor" = "red", "Fair" = "orange", "Good" = "magenta", "Very Good" = "blue", "Excellent" = "lightblue")
+ggplotly_density.n <- ddat3%>% filter(!is.na(GenHlth) & !is.na(Diabetes_binary))  %>% 
+  ggplot(aes(x = BMI, color = GenHlth, fill = GenHlth)) +
+  geom_density(linewidth = 0.75, alpha = 0.6) +
+  xlab("BMI Index") + 
+  labs(color = "General Health", fill = "General Health") +
+  ggtitle("Density Curve of BMI across General Health") +
+  scale_color_manual(values = mycolors.n) +  # Custom line colors
+  scale_fill_manual(values = mycolors.n) +  # Custom fill colors
+           theme(plot.margin = unit(c(2,1,2,1), "cm"),
+                plot.title = element_text(hjust = 0.5))  + 
+  facet_wrap(~ Diabetes_binary)  # Split by diabetes status
+
+print(ggplotly_density.n)
+ggplotly(ggplotly_density.n)
+
+
+
+
+
+```
+
+From  **Figures \@ref(fig:lastone) and \@ref(fig:lastonen)**, the density plot of BMI and Income groups shows that BMI is highest in more participants in the low and medium income groups. And participants in the very high income group are among those with BMI less than 30 or healthier. When the plot is split by diabetes status, we observed similar distribution but we see that variance in the income groups is not as distinct for high and very high groups. While higher BMI is comon in all diabetics, it is more common in the Low and Medium income groups and indicates some variability in the the diabetic group. Similar patterns were observed among general health status with those in the poor health status also with higher BMI both in the diabetic and non-diabetic groups. The shift in peaks in both density plots suggests associations between diabetes and BMI which differs among different income and health groups. 
+
+
+
+## EDA Informed Data Processing
+EDA plays a crucial role in shaping data processing strategies by providing insights into missing data, variable distributions, and importance of feature variables. 
+
+
+### Discretizing Numerical and Sparse Categorical Features
+ From the EDA coupled with the knowledge we have about diabetes and possible factors that are known as risk factor for diabetes, we categorized BMI based on health indicator cutoff points for easy model intertrepretability. For sparse variables like number of days when mental health was not good was grouped into equal size bins.  Other transformations like log or box-cox transformation were used when applicable and decisions were made on whether to us the transformed variables of create new variables.  Details of this work is documented at <a href="matuahene.github.io/STA552/Week4/Mercy_Atuahene_WK2A02Part2_final.html" target="_blank">Feature Transformation and Engineering Details</a>. Also see section under methodology for additional details on feature engineering steps employed for the study.
+ 
+```{r part3}
+#missing values data
+misingdat <- ddat2
+
+#General Health binning
+ddat2$GenHlth_bin <- case_when(
+  ddat2$GenHlth %in% c("Poor", "Fair") ~ "Fair",  
+  ddat2$GenHlth %in% c("Good", "Very Good", "Excellent") ~ "Good",
+)
+
+# order factors
+ddat2$GenHlth_bin <- factor(ddat2$GenHlth_bin, levels = c("Fair", "Good"))
+
+# Categorize income variable
+ddat2 <- ddat2 %>%
+  mutate(Income_Quartile = ntile(Income_num, 4),  # Divide into 4 quartiles
+         Income_q = case_when(
+           Income_Quartile == 1 ~ "Low",
+           Income_Quartile == 2 ~ "Medium-Low",
+           Income_Quartile == 3 ~ "Medium-High",
+           Income_Quartile == 4 ~ "High"
+         ))
+
+
+ddat2$Income_q <- factor(ddat2$Income_q, levels = c("Low", "Medium-Low", "Medium-High", "High"))
+#table(ddat2$Income_q)
+
+#regroup age
+ddat2$Age_grp <- case_when(
+  ddat2$Age %in% c("18-24", "25-29", "30-34", "35-39", "40-44") ~ "Younger",  
+  ddat2$Age %in% c("45-49",  "50-54", "55-59", "60-64") ~ "Middle Age",
+  ddat2$Age %in% c("65-69", "70-74", "75-79", "80+") ~ "Older",
+  TRUE ~ "Unknown"
+)
+
+# Convert the Age_grp variable to a factor and set the levels in the desired order
+ddat2$Age_grp <- factor(ddat2$Age_grp, levels = c("Younger", "Middle Age", "Older", "Unknown"))
+#table(ddat2$Age , ddat2$Age_grp )
+#table( ddat2$Age_grp)
+
+#regroup education
+ddat2$Education_cat <- case_when(
+  ddat2$Education %in% c("No High School","Some High School" , "High School Graduate",  "Some College"  ) ~ "No College",  
+  ddat2$Education %in% c("College Graduate") ~ "College Graduate"
+  #TRUE ~ "Unknown"
+)
+
+ddat2$Education_cat <- factor(ddat2$Education_cat, levels = c("No College", "College Graduate"))
+
+#table(ddat2$Age , ddat2$Age_grp )
+#table( ddat2$Education_cat, useNA = "ifany")
+#table( ddat2$Education, useNA = "ifany")
+
+```
+
+ 
++  Income was re-categorized into low, medium-low, medium-high and high groups using the Income distribution during the EDA and feature transforming.
+
+```{r incomef, fig.cap='Income Group Comparisons (original vs new)', fig.align="center", fig.width=6, fig.height=4}
+
+# Compute Income proportions plot
+library(ggplot2)
+income_q2<-ggplot(na.omit(ddat2), aes(x = Income_q)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "brown", color = "black", width = 0.5) +
+  labs(title = "Proportion of Income Re-categorized",
+       x = "Income Category",
+       y = "Proportion") +
+  theme_minimal()
+
+income_q1<-ggplot(na.omit(ddat2), aes(x = Income)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "brown", color = "black", width = 0.5) +
+  labs(title = "Proportion of Income Categories",
+       x = "Income Category",
+       y = "Proportion") +
+  theme_minimal()+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+#table(ddat2$Income_num)
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(income_q1, income_q2, ncol = 2)
+
+```
+
+
+
+In the bar chart of Income groups shown in **Figure \@ref(fig:incomef)**, the feature was engineered such that the groups are reduced and the group proportions are not sparse in each group.
+
++ BMI: The research shows that the BMI is related to Diabetes and can be considered an important feature variable in further analysis. The original variable was normal with outliers at the right tail. Instead of transforming, we made the decision to use the WHO categorization of BMI groups but our data shown very low participants in the under weight group. We made the decision to create a new variable that uses quartiles to group the participants. 
+
+
+
+```{r, bmiq, fig.cap='BMI Groups Comparison (original vs new)' , fig.align="center", fig.width=6, fig.height=4}
+
+# bin BMI into quartiles
+ddat2$BMI_Quartile <- cut(ddat2$BMI, 
+                          breaks = quantile(ddat2$BMI, probs = c(0, 0.25, 0.50, 0.75, 1), na.rm = TRUE), 
+                          include.lowest = TRUE, 
+                          labels = c("Q1: Lowest", "Q2", "Q3", "Q4: Highest"))
+
+bmi1 <-ggplot(na.omit(ddat2), aes(x = BMI_Quartile)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "lightblue", color = "black", width = 0.5) +
+  labs(title = "BMI quartiles",
+       x = "BMI Quartiles",
+       y = "Proportion") +
+  theme_minimal() 
+
+bmi2 <-ggplot(na.omit(ddat2), aes(x = BMI_Cat)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "lightblue", color = "black", width = 0.5) +
+  labs(title = "BMI categories",
+       x = "WHO BMI categories",
+       y = "Proportion") +
+  theme_minimal() 
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(bmi2, bmi1, ncol = 2)
+
+#table (ddat2$Education)
+
+
+```
+
+
+In the BMI bar chart in **Figure \@ref(fig:bmiq)**, we see that the underweight had very low counts uing ghe WHO groupings for BMI. On the otherhand, when we used the quartiles, the groups did not contain spares data in the groups as in the original feature BMI variable. 
+
+
+
+
+
+```{r educ, fig.cap='Education Groups comaparison (original vs new)', fig.align="center", fig.width=6, fig.height=4}
+educ1<-ggplot(na.omit(ddat2), aes(x = Education)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "orange", color = "black", width = 0.5) +
+  labs(title = "Education Categories",
+       x = "Education Categories",
+       y = "Proportion") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+
+
+ddat2$Education_cat <- case_when(
+  ddat2$Education %in% c("No High School", "Some High School", "High School Graduate", "Some College") ~ "Non-Graduate",  
+  ddat2$Education %in% c("College Graduate") ~ "Graduate",
+  TRUE ~ "Unknown"
+)
+educ2<-ggplot(na.omit(ddat2), aes(x = Education_cat)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "orange", color = "black", width = 0.5) +
+  labs(title = "Education - Re-categorized",
+       x = "Education  Re-categorized",
+       y = "Proportion") +
+  theme_minimal()
+
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(educ1, educ2, ncol = 2)
+
+```
+
++ Education: Similarly, Edcuation was re-categorized by grouping  then into no gradate education and graduates. We notice sparse data in the original variable while the newly created variable that re-categorized the education variable shown more similar groups with the variable. 
+
+
++ Age: The original Age variable had multiple groups that had sparsed groups. Age was re-categorized into 3 groups to ensure these groups did not have severe imbalances.
+
+
+```{r agef, fig.cap='Age group Comparison (original vs new)', fig.align="center" , results='hide', fig.width=6, fig.height=4}
+age1<-ggplot(na.omit(ddat2), aes(x = Age)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "pink", color = "black", width = 0.5) +
+  labs(title = "Age Categories",
+       x = "Age Categories",
+       y = "Proportion") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate labels
+
+age2<-ggplot(na.omit(ddat2), aes(x = Age_grp)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "pink", color = "black", width = 0.5) +
+  labs(title = "Age - Re-categorized",
+       x = "Age  Re-categorized",
+       y = "Proportion") +
+  theme_minimal()
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(age1, age2, ncol = 2)
+```
+
+
+```{r meant, fig.cap='Age group Comparison (original vs new)', fig.align="center" , results='hide', fig.width=6, fig.height=4}
+
+
+#Physical Health histogram
+Phc <- ggplot(ddat2, aes(x = PhysHlth)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "steelblue", color = "black", width = 0.5) +
+  labs(title = "Physical Health Days", x = "Days", y = "Count") +
+  theme_minimal()
+
+
+
+ddat2$MentHlth_bin <- ntile(ddat2$MentHlth, 4)  # Divides into 4 groups
+
+ddat2$PhysHlth_bin <- ntile(ddat2$PhysHlth, 4)  # Divides into 4 groups
+ddat2$MentHlth_bin <- factor(ddat2$MentHlth_bin, levels = c("1", "2", "3", "4"),
+                             labels = c("Q1: Lowest", "Q2", "Q3", "Q4: Highest"))
+ddat2$PhysHlth_bin <- factor(ddat2$PhysHlth_bin, levels = c("1", "2", "3", "4"),
+                             labels = c("Q1: Lowest", "Q2", "Q3", "Q4: Highest"))
+table(ddat2$PhysHlth_bin)
+
+
+Phb<-ggplot(na.omit(ddat2), aes(x = PhysHlth_bin)) +
+  geom_bar(aes(y = after_stat(prop), group = 1), fill = "steelblue", color = "black", width = 0.5) +
+  labs(title = "Quarltiles of Physical Health Days",
+       x = "Quarltiles of Physical Health Days",
+       y = "Proportion") +
+  theme_minimal()
+
+# Arrange plots in a grid (2 columns)
+grid.arrange(Phc, Phb, ncol = 2)
+
+
+```
+
+
+
++ Mental and Physical Health Quartiles: Because of the box-cox transformation's failure to generate a normal distribution of the the feature variable, a new feature that bins the variable into 4 groups was created to generate groups that are similar and groups that are not sparse. See previous work on the transformation at <a href="matuahene.github.io/STA552/Week4/Mercy_Atuahene_WK2A02Part2_final.html" target="_blank">Feature Transformation and Engineering Details</a>.
+See **Figure \@ref(fig:meant)** for bar plots of original number of bad Physical Health compared to the quartiles of the variable. Mental health plot is not shown here but had similar distribution.
+ 
+ 
+ 
+
+### Handling Mssing Data - Multiple Imputation
+
+From the EDA analysis showing missingness into our data which is documented in previous work documented at <a href="matuahene.github.io/STA552/Week3/Mercy_Atuahene_WK2A02Part1_final.html" target="_blank">Multiple Imputation Approach Details</a>.,  we used the multiple imputation (MICE) approach to impute all missing feature variables.
+
+We know that missing data poses challenges that lead to biased estimates and reduced statistical power. One approach used to to address this is multiple imputation methods, such as the **Multivariate Imputation by Chained Equations (MICE)** procedure. This approach generates plausible values for missing observations in order to improve the robustness of regression models.
+
+It is a technique that ensures that parameter estimates are unbiased particularly in MAR and MNAR missingness. The MICE methods preserve the statistical power (detecting an effect if one exists- reducing the risk of Type II errors where a true effect is missed) and enables robust hypothesis testing (reliable methods even when certain assumptions are violated). The MICE approach also has the advantage of imputing missing data for both numeric and categorical types of data once the method of imputation is specified. 
+
+MICE methods implemented included 
+
+* binary feature variables - **logreg** : logistic regression imputation
+* numeric feature variables - **pmm** : predictive mean matching imputation
+* multiclass feature variables - **polyreg** : polytomous logistic regression imputation
+
+In previous work documented at <a href="matuahene.github.io/STA552/Week3/Mercy_Atuahene_WK2A02Part1_final.html" target="_blank">Multiple Imputation Approach Details</a>., we demonstrated the benefit of the MICE procedure compared to single value imputation approaches or non-imputation modeling. 
+Using **AIC** (Akaike Information Criterion) and **BIC** (Bayesian Information Criterion) values, we showed how lower AIC implies better model fit and we inferred that the **Original Model AIC** is greater than the **MICE Model Mean AIC**. And the BIC from the **Original Model BIC** was also greater than that of **MICE Model Mean BIC** implying MICE imputation model performing better than the original dataset model without the multiple imputation approach, suggesting how handling missing data with MICE imputation improved model performance overall. 
+
+Additionally, from the EDA, we created feature variables based on information gained for the EDA steps. In order to remove mameory contrains to the analysis, we created a random sample of 30,0000 records from our over 200,000 records (running for over 3 hours). From this dataset (our analytic dataset). 
+
+
+
+\
+
+# Methodology
+
+In the **Diabetes Dataset**, our objective was to predict whether a participant has diabetes and to analyze factors associated with Hemoglobin A1c (HbA1c). For the purpose of our task we randomly assigned Hemoglobin A1c values to the data with values ranging from 4% to 10%.  
+
+To achieve these goals, we utilized two different machine learning approaches:
+
+1. **Classification** – Since the target variable (diabetes status) is binary (0 = No Diabetes, 1 = Diabetic), we framed this as a classification problem.
+2. **Regression** – To identify factors associated with HbA1c levels, which serve as an indicator of diabetes, we used regression analysis. For this purpose, we will randomly assign Hemoglobin A1c values to the dataset.
+
+## Problem Statement
+
+The goal is to predict whether a participant will have diabetes based on several socio-demographic and health indicator variables. Additionally, we aim to analyze the relationship between these factors and HbA1c levels.
+
+## Model selection
+* We will use a **supervised learning approach** to predicting diabetes the since we have target/labeled variable. 
+* For the diabetes prediction, we employed classification models such as logistic regression, since the target variable is binary (0 = No Diabetes, 1 = Diabetic).
+* For identifying factors influencing HbA1c levels, we applied regression models, since HbA1c a continuous variable.
+
+By leveraging these machine learning techniques, we aim to enhance our understanding of diabetes prediction and its associated risk factors.
+
+
+## Feature Engineering
+To improve the predictive performance of our models, we applied various feature engineering techniques, including feature creation, transformation, and selection. Some of which are outlined above from the EDA steps in our analysis. BMI, number of bad mental health days and number of bad physical health days were negatively skewed. General health rating showed less people responding to have a poor health status (most reported good phsycialhealth days). We also found that more people were other the age group of 40 and higher leading to categorization. Additionally, few people were uneducated compared to all participants. Similarly, the distribution of Income showed that more people earned less than  $75,000. 
+
+To enhance models developed from these variables in terms of performance and also to achieve parsimonious models, we applied the following based on on our understanding from the EDA steps. By applying these feature engineering techniques, we enhanced the dataset’s predictive power and optimized model performance.
+
++ **BMI**: Binning was applied to categorize these values into "Underweight", "Normal", "Overweight", "Obese"  using the following cut of points 0-18.5, >18.5 - 24.9, >24.9 - 29.9 and >29.9 - highest respectively. Due to smaller counts in the groups, we binned BMI into quartile bins.
+
++ **Number of bad mental health days and number of bad physical health days** : Log transformations were applied to transform the data in order to reduce the impact of outliers. However this transformation did not improve the distribution of the feature variables. We created quartile variables instead. 
+
++ **General Health Rating** : We created a new feature variable that re-grouped general health ratings by combining Poor and Fair Ratings into one rating as Fair to minimize over fitting data to small groups.
+
++ **Education and Income**: We regrouped these variables into new features - less then High School education and Greater than High School education and Income with Low, Medium, High and Very High groups. 
+
++ **Age**: We grouped Age into a new feature with 4 levels to reduce the number of small sample sub-groups in the feature to avoid model over fitting to these smaller groups. 
+
+All feature selection of variables was based on current literature and domain-specific knowledge. 
+
+## Data Splitting
+To evaluate the performance of our models effectively, we split the dataset into Training and testing sets. The validation was not used in our analysis.  This ensures that the model is able to generalize well to new/unseen data and also to build robust machine learning models. A summary of these datasets and their functions are provided below.
+
+### Training Set
+
+**Purpose**: Used to train the models where it learns the the relationships between the input features and the target variable. Size will be 60-80% of our entire dataset. See <a href="pengdsci.github.io/STA552/sta552-w05.html" target="_blank">Model Performance Measures and Methods of Cross-validation</a> for additional information on this.
+
+
+### Validation Set
+
+**Purpose**: Used to tune hyper parameters and evaluate model performance during training.Size will be between 10-20% of the dataset. Helps in model selection and assessing performance without bias from the training data. See lectures at <a href="pengdsci.github.io/STA552/sta552-w05.html" target="_blank">Model Performance Measures and Methods of Cross-validation</a> for additional information on this.
+
+
+### Test Set
+
+**Purpose**: Used to evaluate the final model's performance on new data. Size will be between 10-20% of the dataset. This part is used to provide unbiased evaluation of the model's generalizability. See <a href="pengdsci.github.io/STA552/sta552-w05.html" target="_blank">Model Performance Measures and Methods of Cross-validation</a> for additional information on this.
+
+
+These steps ensure that the models are not only effective at learning from the training dataset but making it possible to predict (discriminated Diabetics from non-diabeteics) on new and unseen data.
+# See https://pengdsci.github.io/STA552/sta552-w05.html
+
+
+### Performance Metrics 
+To assess the performance of our machine learning models, the following will be applied
+
++ For the **predictive model**, we would use precision which measures the proportion of correctly predicted positive instances (true positives) out of all instances predicted as positive (true positives + false positives). This is important because, it diagnosing someone when they are not diabetic could be expensive in the presence of **HIGH** false positives.
+
++ We would also use ROC-AUC (Receiver Operating Characteristic - Area Under the Curve) which evaluates the models ability to distinguish between the positive and negative classes by plotting the true positive rate (recall) against the false positive rate. This approach is useful when comparing different models and also in the case of imbalanced dataset (example diabetic vs non-diabetic). 
+
+
++ For the **regression model**, we would use the Root Mean Squared Error (RMSE) which measures the average magnitude of errors in a regression model, taking the square root of the average of the squared differences between predicted and actual values.  
+
++ **R-squared**: We would also use coefficient of determination which indicates the proportion of variance in the target variable explained by the model.
+
+
+# Implementation
+We now outline the modeling methods used in our analysis, beginning with the diabetes prediction model, followed by the HbA1c regression model. For each approach, we develop two models informed by domain-specific knowledge from existing literature. We then apply cross-validation techniques to identify the best-performing model. 
+
+## Candidate Logistic regression Models and Selection
+
++ **Model 1**: Diabetes_binary = BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Income_q + Smoker + MentHlth_bin + PhysHlth_bin  + BMI_Quartile*PhysHlth_bin 
+                      
++ **Model 2**: Diabetes_binary = BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Smoker + PhysHlth_bin + Sex*PhysHlth_bin
+
+The following features are the engineered variables included in the model.
+
+* **BMI_Quartile**	Quartiles of the numeric BMI variable (Q1: Lowest, Q2, Q3, Q4: Highest)
+* **MentHlth_bin/PhysHlth_bin**	Quartiles number of days mental health was not good (Q1: Lowest, Q2, Q3, Q4: Highest)
+* **Income_q** Income Quartiles ( Low,  Medium-Low, Medium-High, High)
+* **Education_cat** Education Categories ( Graduate, Non-Graduate )
+
+The  <b>BMI_Quartile*PhysHlth_bin interaction in Model 1</b> is included based literature which indicates a relationship between physical health and BMI, both of which influence diabetes incidence. Studies show that individuals with a higher BMI are at significantly increased risk of developing diabetes.Since BMI and physical health status both contribute to diabetes risk, their combined effect may be greater than their individual effects. See <a   href="https://pubmed.ncbi.nlm.nih.gov/11556298/" target="_blank"> Hu et al, (2001)</a> for additional information. 
+
+Similar reasons for the <b>Sex*PhysHlth_bin interaction in Model 2</b> - Men and women experience different metabolic and hormonal influences on diabetes risk. Additionally, women with poor physical health may experience more severe metabolic consequences, while men may be less likely to seek preventive care, leading to delayed diagnosis. See <a   href="https://pubmed.ncbi.nlm.nih.gov/19318219/" target="_blank"> Geer & Shen, (2009)</a> for additional information. 
+
+### Model Selection via 5-fold Cross-Validation
+
+We used 5-fold cross-validation to select the better model from `Model 1` and `Model 2` for the logistic regression modelin. We used `caret()` library functions for training the models and evaluate their performance, and also `pROC()` library to generate and evaluate ROC and calculation AUC.  
+
+* **Data Splitting**: We randomly split the data -  70% split for training and 30% for testing. 
+
+* **5-fold cross-validation**: We used trainControl to set up cross-validation (5-fold in this case) for model training. 
+
+* **Choose Performance Measure**: We used AUC to assess performance of the models.
+
+
+
+```{r, aucmod, fig.cap="AUC across Imputed Datasets"}
+
+#analytic sample - not imputed
+working_analytic2 <-  readRDS("final_analytic_data.rds")
+
+# working imputed analytic data
+mice_imp <- readRDS("imp5.rds")
+
+library(caret)
+library(pROC)
+library(mice)
+
+# Split the dataset into training (70%) and testing (30%) sets (use the first imputed dataset for splitting)
+set.seed(123)
+train_index <- createDataPartition(complete(mice_imp, action = 1)$Diabetes_binary, p = 0.7, list = FALSE)
+train_data <- complete(mice_imp, action = 1)[train_index, ]
+test_data <- complete(mice_imp, action = 1)[-train_index, ]
+
+# Set up cross-validation (e.g., 5-fold CV)
+cv_control <- trainControl(method = "cv", number = 5, 
+                           savePredictions = "all", 
+                           classProbs = TRUE, 
+                           summaryFunction = twoClassSummary)
+
+# Define the formulas for the two models
+formula1 <- Diabetes_binary ~ BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Income_q + Smoker + MentHlth_bin + PhysHlth_bin + BMI_Quartile*PhysHlth_bin
+formula2 <- Diabetes_binary ~ BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Smoker + PhysHlth_bin + Sex*PhysHlth_bin
+
+# Define a function to perform cross-validation for each imputed dataset
+cv_model <- function(data, formula, cv_control) {
+  # Train model using cross-validation
+  model <- train(formula, data = data, method = "glm", family = "binomial", 
+                 trControl = cv_control, metric = "ROC")
+  return(model)
+}
+
+# Apply cross-validation for each imputed dataset (m=5)
+models1 <- list()
+models2 <- list()
+
+# Train models for all imputations
+for (i in 1:mice_imp$m) {
+  # Get the ith imputed dataset
+  completed_data <- complete(mice_imp, action = i)
+  levels(completed_data$Diabetes_binary) <- make.names(levels(completed_data$Diabetes_binary))
+  # Train both models on the ith imputed dataset
+  models1[[i]] <- cv_model(completed_data[train_index, ], formula1, cv_control)
+  models2[[i]] <- cv_model(completed_data[train_index, ], formula2, cv_control)
+}
+
+# Extract AUC results from each model across imputations
+auc_model1 <- sapply(models1, function(model) max(model$results$ROC))
+auc_model2 <- sapply(models2, function(model) max(model$results$ROC))
+
+# Print out AUC values for each model across imputations
+#cat("Model 1 AUC across imputations: ", auc_model1, "\n")
+#cat("Model 2 AUC across imputations: ", auc_model2, "\n")
+
+#library(jsonlite)
+#cat(toJSON(auc_model1, pretty = TRUE))
+
+
+# Pool the results (you can also do other summaries like means or medians)
+mean_auc_model1 <- mean(auc_model1)
+mean_auc_model2 <- mean(auc_model2)
+
+#cat("Mean AUC for Model 1: ", mean_auc_model1, "\n")
+#cat("Mean AUC for Model 2: ", mean_auc_model2, "\n")
+
+# Load ggplot2
+library(ggplot2)
+
+# Create a data frame for plotting
+auc_df <- data.frame(
+  Imputation = rep(1:5, 2),  # Assuming 5 imputations
+  AUC = c(0.7675834, 0.7653512, 0.7650025, 0.7654333, 0.7668263,
+          0.7627277, 0.7606672, 0.7602366, 0.7608674, 0.7627158),
+  Model = rep(c("Model 1", "Model 2"), each = 5)  # Label models
+)
+
+ggplot(auc_df, aes(x = Imputation, y = AUC, color = Model, group = Model)) +
+  geom_point(size = 3) +  
+  geom_line() +  
+  labs(title = "AUC Across Imputed Datasets", x = "Imputation", y = "AUC") +
+  theme_minimal()
+
+
+```
+
+In **Figure \@ref(fig:aucmod)**, which plots the AUC values from the models on the training dataset, we notice model 1 AUC values were always above 0.764 across all 5 imputed datasets. A mean of the AUC values across the imputations shows Model 1 average AUC = `r mean_auc_model1` while model 2 average AUC = `r mean_auc_model2` on the training set. This suggests that model 1 is likely capturing patterns in the data more effectively than Model 2 and might generalize better, but this needs to be confirmed with the testing data which the model has not seen.
+
+From these AUC values we thus know that: , 
+``` {r, highAUC}
+# Choose the model with the highest mean AUC
+if (mean_auc_model1 > mean_auc_model2) {
+  best_model <- "Model 1"
+  cat("Model 1 is the best model based on mean AUC.")
+} else {
+  best_model <- "Model 2"
+  cat("Model 2 is the best model based on mean AUC.")
+}
+```
+
+
+Next, we evaluate the models using the test data on all 5 imputed datasets. 
+
+```{r, auctest, fig.cap="AUC across Imputed Datasets in the Test Data"}
+# Install caret package (if not already installed)
+#install.packages("caret")
+
+# Load caret package to access confusionMatrix
+library(caret)
+
+
+# Once the best model is selected, evaluate on the test set (use all imputations)
+best_model_predictions <- list()
+best_model_probabilities <- list()
+
+# Ensure that predictions and actual test labels are factors with the same levels
+# Inside the loop, gather all the predictions and probabilities
+for (i in 1:mice_imp$m) {
+  completed_data <- complete(mice_imp, action = i)
+  levels(completed_data$Diabetes_binary) <- make.names(levels(completed_data$Diabetes_binary))
+
+  #final_model <- train(if (best_model == "Model 1") formula1 else formula2, 
+                       #data = completed_data[train_index, ], 
+                       #method = "glm", family = "binomial",
+                      # trControl = cv_control, metric = "ROC")
+  
+final_model <- tryCatch({
+  train(if (best_model == "Model 1") formula1 else formula2, 
+        data = completed_data[train_index, ], 
+        method = "glm", family = "binomial",
+        trControl = cv_control, metric = "ROC")
+}, error = function(e) {
+  cat("Error in train():", e$message, "\n")
+  NULL
+})
+
+if (is.null(final_model)) {
+  cat("Final model could not be created.\n")
+}
+
+  # Get predictions for the test set to evaluate the best model on the test data
+  best_model_predictions[[i]] <- predict(final_model, newdata = completed_data[-train_index, ])
+  best_model_probabilities[[i]] <- predict(final_model, newdata = completed_data[-train_index, ], type = "prob")[, 2]
+
+  # Ensure predictions are factors with the same levels as the test data
+  best_model_predictions[[i]] <- factor(best_model_predictions[[i]], 
+                                         levels = levels(test_data$Diabetes_binary))
+}
+
+# Now, calculate accuracy after gathering all predictions
+accuracy_list <- sapply(1:mice_imp$m, function(i) {
+  # Convert predictions and actual values to factors with appropriate levels
+best_model_predictions[[i]]  <- factor(best_model_predictions[[i]], levels = c("No Diabetes", "Has Diabetes"))
+test_data$Diabetes_binary <- factor(test_data$Diabetes_binary, levels = c("No Diabetes", "Has Diabetes"))
+#confusion <- confusionMatrix(predictions, actual_values)
+  confusion <- confusionMatrix(best_model_predictions[[i]], test_data$Diabetes_binary)
+  return(confusion$overall['Accuracy'])
+})
+
+
+# Mean accuracy across imputations
+mean_accuracy <- mean(accuracy_list)
+#cat("Mean Test Set Accuracy: ", mean_accuracy, "\n"). # Follow up
+
+# AUC for the test set across all imputations
+auc_list <- sapply(1:mice_imp$m, function(i) {
+  roc_curve <- roc(test_data$Diabetes_binary, best_model_probabilities[[i]])
+  return(auc(roc_curve))
+})
+
+
+# Mean AUC across imputations
+mean_auc_test <- mean(auc_list)
+#cat("Mean AUC for the test set: ", mean_auc_test, "\n")
+
+# Plot ROC curve for the selected best model
+mean_roc_curve <- roc(test_data$Diabetes_binary, rowMeans(do.call(cbind, best_model_probabilities)))
+plot(mean_roc_curve, main = "Mean ROC Curve for the Test Data", col = "blue")
+
+
+
+
+
+
+```
+
+\
+
+### Assessing Model Performance
+
+In **Figure \@ref(fig:auctest)** the average AUC on the test data = `r  mean_auc_test` suggests that the model performs fairly similarly on both the training and test sets. Since in both the training and testing datasets, the AUC values were around 0.766. This implies that model 1 is able to distinguish between the two classes ("Has Diabetes" vs. "No Diabetes") moderately well. Below, we compare these values.
+
++ **Comparing Train vs. Test AUC**
+
+++ Train AUC = 0.7660394
+++ Test AUC = 0.7668852
+
+The closeness of these values indicate:
+
++ 1. **No significant overfitting or underfitting**: The AUC values are similar on both the training and test sets, meaning model 1 is generalizing well to new, unseen data (the test set). 
+
++ 2. **Model Stability**: Since the AUC values are almost identical, it suggests that the model is stable and not overly influenced by the specific data it was trained on, and is likely robust.
+
+### Finalizing the model
+
+Next, we use Area under the curve to assess Model 1 on the fully imputed dataset. In figure **Figure \@ref(fig:logmodel1)** , **the  overall AUC on the fully imputed dataset was 0.772**.
+
+
+The AUC for the training dataset was 0.766, while the AUC for the test dataset was slightly higher at 0.767, suggesting that the model generalizes well to unseen data. The AUC for the fully imputed dataset was 0.772, which is marginally higher than both the training and test dataset AUCs. This small increase in AUC for the fully imputed dataset could indicate that imputation helped in recovering missing values and providing a more complete representation of the data, potentially improving model performance. However, the overall difference in AUC values is minimal, suggesting that the model's performance is relatively stable across different data. These findings support the model’s robustness, but further validation on additional datasets would be helpful to confirm its generalizability.
+
+
+``` {r logmodel1, fig.cap="AUC across Imputed Datasets in the Fully-imputed Data"}
+library(pROC)
+
+#analytic sample - not imputed
+working_analytic2 <-  readRDS("final_analytic_data.rds")
+
+# working imputed analytic data
+mice_imp <- readRDS("imp5.rds")
+#densityplot(mice_imp, ~ Diabetes_binary + BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Income_q + Smoker + MentHlth_bin + PhysHlth_bin)
+
+ #Model on MICE-Imputed Data
+model.logit1 <- with(mice_imp,  glm(Diabetes_binary ~ BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + Income_q + Smoker + MentHlth_bin + PhysHlth_bin+ BMI_Quartile*PhysHlth_bin , 
+                          family = binomial))  
+pooled_logit1 <- pool(model.logit1)
+
+#probabilities <- round(as.vector(predict(pooled_logit1, type = "response")),3)
+
+# Generate predictions for each imputed dataset and store them in a list
+all_predictions <- lapply(1:mice_imp$m, function(i) {
+  data_i <- complete(mice_imp, action = i)  # Get the ith imputed dataset
+  
+  # Fit the model on the ith dataset
+  model_i <- glm(Diabetes_binary ~ BMI_Quartile + HighBP + Education_cat + Age_grp + Sex + 
+                 Income_q + Smoker + MentHlth_bin + PhysHlth_bin + 
+                 BMI_Quartile*PhysHlth_bin, family = binomial, data = data_i)
+  
+  # Get the predicted probabilities for the ith model
+  predict(model_i, type = "response")
+})
+
+# Average the predictions across all imputed datasets
+mean_probabilities <- rowMeans(do.call(cbind, all_predictions))
+
+# Round the averaged predictions
+mean_probabilities_rounded <- round(mean_probabilities, 3)
+
+ROCobj <- roc(working_analytic2$Diabetes_binary, mean_probabilities_rounded)
+
+# predict probability of P(Y = "Yes")
+# Get AUC from the ROC object
+AUC <- ROCobj$auc
+
+# Create a data frame for plotting the ROC curve
+Sen <- ROCobj$sensitivities
+Spe <- ROCobj$specificities
+pROCdata <- data.frame(TPR=Sen, FPR = (1 - Spe))
+
+# Plot the ROC curve and display AUC on the plot
+ggpROC <- ggplot(data = pROCdata, aes(x = FPR, y = TPR)) +
+  geom_line(col = "steelblue") +
+  geom_point(col = "red") +
+  ggtitle("ROC of Logistic Model 1 Using pROC Library") +
+  xlab("1 - Specificity (FPR)") + 
+  ylab("Sensitivity (TPR)") +
+  annotate("text", x = 0.6, y = 0.5, label = paste("Logit Model 1 AUC =", round(AUC, 3))) +  # Correct annotation of AUC
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = c(0.8, 0.2),
+        plot.margin = unit(c(0.15, 0.15, 0.75, 0.15), "inches"),
+        axis.line = element_line(size = 2, colour = "navy", linetype=1))
+
+# Plot the ROC curve interactively using ggplotly
+auc1 <-ggplotly(ggpROC)
+auc1
+```
+
+The final model selected for classifying diabetes status is a logistic regression model (glm function in R) using the binomial family. The model was trained on the imputed data set and evaluated across multiple imputations to account for uncertainty in the missing data.
+The model estimates are presented below with a flag the indicates feature variables that might not be significant predictors.
+
+```{r, tabfinmodel}
+pooled_logit1 <- pool(model.logit1)
+model_summary<-tidy(pooled_logit1)
+
+library(caret)
+library(knitr)
+library(broom)
+library(dplyr)
+
+# Convert model summary to a data frame
+model_table <- as.data.frame(model_summary)
+
+# Compute Odds Ratios and Confidence Intervals
+model_table$Odds_Ratio <- exp(model_table$estimate)
+model_table$CI_Lower <- exp(model_table$estimate - 1.96 * model_table$std.error)
+model_table$CI_Upper <- exp(model_table$estimate + 1.96 * model_table$std.error)
+model_table$Flag <- ifelse(model_table$CI_Lower <= 1 & model_table$CI_Upper >= 1, "⚠️", "")
+
+# Subset the required columns
+#model_table <- model_table[, c("term", "estimate", "Odds_Ratio", "CI_Lower", "CI_Upper", "std.error", "statistic", "p.value", , "Flag")]
+model_table <- model_table[, c("term", "estimate", "Odds_Ratio", "CI_Lower", "CI_Upper", "std.error", "Flag")]
+# Print using kable
+kable(model_table, digits = 3, caption = "Logistic Regression Estimates with Confidence Intervals")
+
+
+```
+
+In table **\@ref(tab:tabfinmodel)**, BMI, Age, Income, Physical Health were significant. These variables and the corresponding effect sizes support the underlying literature. 
+
+**Final Model Application**
+
+This final model, with the optimal cut-off probability, can now be used for predicting whether a new participant will develop diabetes based on the available socio-demographic and health indicators. The final model is in give below:
+
+```{r}
+# Assuming model_summary contains the regression model summary
+
+# Convert to data frame
+model_table <- as.data.frame(model_summary)
+
+# Extract only numeric columns (coefficients, standard errors, etc.)
+numeric_columns <- model_table[, sapply(model_table, is.numeric)]
+
+# Ensure the terms are separate (non-numeric)
+terms <- model_table$term
+
+# Create the equation string
+equation <- paste("log(P(Y = 1) / (1 - P(Y = 1))) =", round(numeric_columns[1, 1], 3))  # Intercept
+
+# Loop through the numeric values (coefficients) and add each term to the equation
+for (i in 2:ncol(numeric_columns)) {
+  coef_value <- round(numeric_columns[1, i], 3)
+  term_name <- terms[i]  # Get the corresponding term name
+  
+  # Add the term and coefficient to the equation
+  equation <- paste(equation, "+", coef_value, "*", term_name)
+}
+
+# Print the equation
+cat("\n\nLogistic Regression Equation:\n", equation)
+
+
+
+
+```
+
+
+### Discussion and Recommendation
+
+When comparing Model 1 and Model 2, Model 1 showed slightly better performance with a higher mean AUC of 0.772, indicating that Model 1 provides better predictions overall. This makes the model valuable for clinical decision regarding diabetes care. Polices that educate people about risk factors like BMI, Age, Income, and Physical Health should be implemented in the communities to help curb diabetes prevalence. 
+
+Based on the results, we recommend Model 1 for predicting Diabetes due to its ability to generalize well to unseen data. However, additional testing to new data will confirm the robustness of the more and its generalizability power. 
+
+Additionally, the predictors identified as most influential like BMI, and age have significant clinical or practical relevance. These variables are consistent with previous studies and align with current understanding of diabetes. 
+
+The non-significant variables in the model suggest that these factors might not be as important for diabetes using the current data we have. Future studies may help confirm this. One interesting note participants self-reported days physical health was good and could collectedly have under-reported bad physical health days which could impact both the models predictive power and effect estimates. 
+
+**Limitations**
+
+The use of cross-validation/5-fold CV strengthened the robustness of the model by ensuring that the findings are not specific to a particular train-test split. However,the model's performance is only contingent on the data quality and sample size, which may limit its applicability in other settings or populations. Future work can also focus on longitudinal data to compare likely differences between the predictive models from a longitudinal study and that from a cross sectional study. Additionally, due to resource constraints, the analysis of Hemoglobin A1C (HbA1c) was not fully completed. Future work will address this limitation and further investigate the relationship between key risk factors and HbA1c. 
+
+
+
+
+
+
+

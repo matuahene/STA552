@@ -1,0 +1,195 @@
+---
+title: "Identification of Risk Factors and Prediction of Diabetes in the USA"
+subtitle: "An Analysis of Contributing Factors and Predictive Modeling"
+author: "Author: Mercy Atuahene" 
+date: "Date: March 05, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 20px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h3.subtitle {  
+    font-size: 18px;  
+    font-weight: bold;  
+    color: darkred;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 16px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 16px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+div.affiliation {  
+    font-size: 14px;  
+    font-style: italic;  
+    color: DarkSlateGray;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+
+
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+h5 { /* Header 5 - font specifications of level 5 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(dplyr)
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+library(bookdown)
+library(MASS)
+library("readxl")
+```
+
+
+
+
+
+
+
+
+#install.packages("readxl") # install package if required
+
+
+nhefs <- read_excel("UPDATE FILE DIRECTORY HERE/nhefs.xls")
+nhefs$cens <- ifelse(is.na(nhefs$wt82), 1, 0)
+
+# regression on covariates, allowing for some effect modification
+fit <- glm(wt82_71 ~ qsmk + sex + race + age + I(age*age) + as.factor(education)
+           + smokeintensity + I(smokeintensity*smokeintensity) + smokeyrs
+           + I(smokeyrs*smokeyrs) + as.factor(exercise) + as.factor(active)
+           + wt71 + I(wt71*wt71) + I(qsmk*smokeintensity), data=nhefs)
+summary(fit)

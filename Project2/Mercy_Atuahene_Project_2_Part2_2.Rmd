@@ -1,0 +1,2001 @@
+---
+title: "Who Quits Smoking? Unraveling the Key Influences"
+subtitle: "Predicting Smoking Cessation Using Data and Machine Learning"
+author: "Author: Mercy Atuahene" 
+date: "Date: March 19, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 20px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h3.subtitle {  
+    font-size: 18px;  
+    font-weight: bold;  
+    color: darkred;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 16px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 16px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+div.affiliation {  
+    font-size: 14px;  
+    font-style: italic;  
+    color: DarkSlateGray;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+
+
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+h5 { /* Header 5 - font specifications of level 5 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(tableone)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+library(bookdown)
+library(MASS)
+library("readxl")
+library(dplyr)
+
+```
+
+\
+
+# Abstract
+This project examines the effect of smoking cessation on weight change using clinical, socio-economic, and behavioral features. The analysis is based on the NHANES I Epidemiologic Follow-up Study (NHEFS) sample dataset. Exploratory data analysis and feature engineering were conducted to better understand variable relationships and guide model development. Regularized logistic and linear regression models were used to evaluate classification and prediction performance, with cross-validation applied to assess accuracy and generalizability. Support Vector Machines (SVM) were also implemented to compare performance with the regularized models. The results highlight how statistical learning methods, when paired with proper hyperparameter tuning, can support risk prediction and inform decision-making in clinical and public health settings.
+
+
+
+
+```{r}
+#install.packages("readxl") # install package if required
+#nhefs <- read_excel("https://matuahene.github.io/STA552/Poject2/NHEFS.xls")
+nhefs <-read.csv("https://matuahene.github.io/STA552/Project2/nhefs.csv", skip=0)
+#str(nhefs)
+#Function to Convert Variables to Factors with Labels
+convert_to_factor <- function(df, var_labels) {
+  for (var in names(var_labels)) {
+    if (var %in% colnames(df)) {
+      
+      # Check if the variable has labels (list format) or is just a vector
+      if (is.list(var_labels[[var]])) {
+        labels <- var_labels[[var]]$labels   # Extract labels
+        missing_values <- var_labels[[var]]$missing  # Extract missing values (if any)
+        
+        # Replace specified values with NA
+        if (!is.null(missing_values)) {
+          df[[var]][df[[var]] %in% missing_values] <- NA
+        }
+      } else {
+        labels <- var_labels[[var]]  # Just a vector of labels
+        missing_values <- NULL  # No missing values
+      }
+      
+      # Convert to factor with labels (if labels exist)
+      if (!is.null(labels)) {
+        df[[var]] <- factor(df[[var]], labels = labels)
+      } else {
+        df[[var]] <- factor(df[[var]])  # Convert to factor without labels
+      }
+      
+    } else {
+      warning(paste("Variable", var, "not found in dataset"))
+    }
+  }
+  return(df)
+}
+
+var_labels <- list(
+  sex = c("Male", "Female"),
+  qsmk = c("Did Not Quit", "Quit"),
+  race = c("White", "Black or Other"),
+  marital = c( "Married", "Widowed", "Never married", "Divorced", "Separated", "Unknown"),
+  exercise = c("much exercise", "moderate exercise", "little or no exercise"),
+  active = c("very active", "moderately active", "inactive"),
+  alcoholfreq = c("Almost every day", "2-3 times/week", "-4 times/month", "< 12 times/year", "No alcohol last year", "Unknown"),
+  alcoholpy = list(labels = c("EVER", "NEVER"),  missing = 2),
+  alcoholtype = c("BEER", "WINE", "LIQUOR", "OTHER"),
+  asthma = c("NEVER", "EVER"),
+  bronch = c("NEVER", "EVER"),
+  chroniccough = list(c("NEVER", "EVER"), missing=2),
+  diabetes = list(labels =c("NEVER", "EVER"), missing=2),
+  education = c("8TH GRADE OR LESS", "HS DROPOUT", "HS", "COLLEGE DROPOUT",  "COLLEGE OR MORE"), 
+  death = c("NO", "YES"),
+  hbp = list(labels = c("NEVER", "EVER"), missing=2),
+  hbpmed = list(labels = c("NEVER", "EVER"), missing=2),
+  hf = c("NEVER", "EVER"),
+  hightax82 = c("otherwise", "High taxed state of residence"),
+  tb = c("NEVER", "EVER"),
+  weakheart = c("NEVER", "EVER"),
+  wtloss = c("NEVER", "EVER"),
+  income = c("<$1000", "1000-1999", "2000-2999", "3000-3999", "4000-4999", "5000-5999", "6000-6999", "7000-9999", "10000-14999", "15000-19999", "20000-24999",    
+             "25000+")
+  )
+
+# Named list of labels
+labels_list <- list(
+  hf = "Heart Failure",  hbpmed = "Blood Pressure Medication in 1971",  race = "Race/Ethinicity",  age = "Age in 1971 (years)", qsmk = "Quit smoking between 1971 and 1982",
+  marital = 'Marital Status', exercise = "How much exercise",  active = "How active inparticular day", alcoholfreq = "How often you drink", alcoholtype = "Type of Alcohol",
+  asthma = "Asthma in 1971?", bronch = "Bronchitis/Emphysema in 1971", chroniccough ='Had Chronic cought in 1971?', diabetes = "Diabetes in 1971", education = "Amount of Education in 1971", death = "Death by 1992", hbp = "High Blood Pressure in 1971",  weakheart = "Weak Heart Meds in 1971", wt71 = 'Weight (kg) in 1971', wt82 = 'Weight (kg) in 1982', 
+  wt82_71 = "Weight Change in kg", wtloss = "Weight Loss?", yrdth = "Year of Death", school = "Highest Grade of Regular School in 1971", income="Total Family Income", smokeyrs = "Years of Smoking", sex = "Sex", smokeintensity = 'Number of cigarettes smoked per day in 1971', hightax82 = "Living in Highly Taxed State", cholesterol = "Cholesterol",
+  price71 = "Average Tobacco price in state of residence in 1971", price82 = "Average Tobacco price in state of residence in 1982",
+  price71_82 = "Difference in avg tobacco price in state of residence 1971-1982", sbp= "Systolic Blood Pressure" , dbp = "Diastolic Blood Pressure" ,
+  tax71 = "Tobacco tax in 1971", tax82 = "Tobacco tax in 1982", tax71_82 = "Difference in tobacco tax in State of residence  1971-1982"
+)
+
+```
+
+
+# Introduction
+
+Smoking, a modifiable behavior is also the leading preventable cause of death, disability in the US according the <a   href="https://www.cdc.gov/tobacco/about/index.htm" target="_blank"> (CDC)</a>. Cigarette smoking and second cause more than 480,000 deaths representing close to 1 in 5 deaths. It is known to cause many diseases such as cancer, type-2 diaberes and stroke. These outomes leads to increase in utilization of healthcare, costs work absenteeism. The literature supports the importance of quitting smoking. It is considered one of the most import steps a person can take to improve their health. Some of the benefits of quitting include improvement respiratory function and metabolism. See <a   href="https://pubmed.ncbi.nlm.nih.gov/38059013/" target="_blank"> Pezzuto et al, (2023)</a>. Weight gain or loss is also reported with smoking or cessation. For instance, <a   href="https://pubmed.ncbi.nlm.nih.gov/38059013/" target="_blank"> Smoking cessation and weight gain CFilozof et al, (2004)</a> have reported how weight is gained upon smoke cessation in observational studies. Similar observations have also been reported when pregnant women stopped smoking. Despite the weight gain, the research also supports that the benefits outweigh the effects of smoking.  
+
+Resting on this background, we will be using the National Health and Nutrition Examination Survey Epidemiologic Follow-up Study (NHEFS) to predict the factors the contribute to one's ability to quit smoking. We believe, the ability to identify individuals who are more likely to quit will provide an opportunity to implement targeted smoking-cessation policies that will yield effective outcomes. This will lead to reducing smoking-related illness and lead to a reduction in cost of care for smoking-related deaths if we understand factors that help individuals quit smoking. Additionally, we will predict weight change (gain) when individuals quit smoking using socioeconomic and health related variables. 
+
+The purpose is thus to develop a predictive model(s) to identify individuals likely to quit smoking using, socio-economic, demographic, behavioral factors and health data and also to predict individual weight change based on smoking habits and health-related variables. We will use Regularized Logistic and Linear Regression approaches and evaluate these models performance assessing the accuracy and overall predictive power via cross-validation approaches that ensures reliable future predictions. The cross validation methods will be used the select the optimal model. We will also compare SVM Classification and Regression models to the Regularized Classification and Regression methods using metrics like MSE, MAE for regression; accuracy, ROC-AUC for classification models. 
+
+# Data Overview
+
+## Description of Data
+
+The NHEFS is a national longitudinal study that was jointly initiated by the National Center for Health Statistics and the National Institute on Aging in collaboration with other agencies of the Public Health Service. The NHEFS was designed to investigate the relationships between clinical, nutritional, and behavioral factors assessed in the first National Health and Nutrition Examination Survey NHANES I and subsequent morbidity, mortality, and hospital utilization, as well as changes in risk factors, functional limitation, and institutionalization. It includes a cohort of persons 25-74 years of age who completed medical examination of the NHANES I in 1971-75. It is comprised of a series of follow-up studies, the first was conducted for all participants of the NHEFS cohort from 1971 throughout 1982. Other follow-ups were conducted in 1986, 1987 and 1992 with the same design as when it was develoeped in the 1982-1984 NHEFS with a few exceptions. For additional information, see <a href="https://wwwn.cdc.gov/nchs/nhanes/nhefs/" target="_blank">Epidemiologic Followup Study (NHEFS)</a>.
+
+For our analysis, we will be using a subset of the dataset from **Miguel Hernan and Robin's book - What IF** which is a cleaned dataset sample from the NHEFS used in their textbook. It contains 1629 records and 64 variables. The baseline year is the 1971-75 of the survey with follow up visits at 1982 based on participants with data about their medical history at baseline. 
+
+
+## Feature Variables
+
+The variables of interest that we will be using for our purpose will include the following features:
+
+ * **Target feature variables:** smoke cessation:qsmk (QUIT SMOKING BETWEEN 1ST QUESTIONNAIRE AND 1982, 1:YES, 0:NO) and weight change in 1982: wt82_71 (WEIGHT CHANGE IN KILOGRAMS) which is the difference in weight at baseline in 1971 and in 1982. 
+ 
+* **Independent feature variables**
+
+   + active: a categorical feature - (IN YOUR USUAL DAY, HOW ACTIVE ARE YOU? IN 1971, 0:very active, 1:moderately active, 2:inactive)
+   + age:	a numeric feature (AGE IN 1971)
+   + alcoholfreq:	ordinal categorical feature - (HOW OFTEN DO YOU DRINK?  IN 1971  (0: Almost every day, 1: 2-3 times/week, 2: 1-4 times/month, 3: < 12 times/year, 4: No alcohol last year, 5: Unknown) )
+   + alcoholpy:	categorical feature variable - (HAVE YOU HAD 1 DRINK PAST YEAR? IN 1971,  (1:EVER, 0:NEVER; 2:MISSING))
+   + alcoholtype: categorical feature variable -(WHICH DO YOU MOST FREQUENTLY DRINK? IN 1971  (1: BEER, 2: WINE, 3: LIQUOR, 4: OTHER/UNKNOWN))
+   + asthma: categorical feature variable	- (DX ASTHMA IN 1971, (1:EVER, 0:NEVER) )
+   + bronch: categorical feature variable - (DX CHRONIC BRONCHITIS/EMPHYSEMA IN 1971,  (1:EVER, 0:NEVER))
+   + cholesterol:	numeric feature variable - (SERUM CHOLESTEROL (MG/100ML) IN 1971)
+   + chroniccough:categorical feature variable - (DX CHRONIC COUGH IN 1971,  (1:EVER, 0:NEVER))
+   + dbp:	numerical feature variable - (DIASTOLIC BLOOD PRESSURE IN 1982)
+   + death: categorical feature variable - (DEATH BY 1992, (1:YES, 0:NO))
+   + diabetes:categorical feature variable - (DX DIABETES IN 1971,  (1:EVER, 0:NEVER, 2:MISSING))
+   + education:	categorical, ordinal feature variable AMOUNT OF EDUCATION BY 1971 - ((1: 8TH GRADE OR LESS, 2: HS DROPOUT, 3: HS, 4:COLLEGE DROPOUT, 5: COLLEGE OR MORE))
+   + exercise:categorical, ordinal feature variable -(IN RECREATION, HOW MUCH EXERCISE? IN 1971, (0:much exercise,1:moderate exercise,2:little or no exercise))
+   + hbp:	categorical feature variable - (DX HIGH BLOOD PRESSURE IN 1971, (1:EVER, 0:NEVER, 2:MISSING))
+   + hbpmed:categorical feature variable - (USE HIGH BLOOD PRESSURE MEDICATION IN 1971,  (1:EVER, 0:NEVER, ; 2:MISSING))
+   + hf:categorical feature variable - (DX HEART FAILURE IN 1971, (1:EVER, 0:NEVER))
+   + hightax82:	categorical feature variable - (LIVING IN A HIGHLY TAXED STATE IN 1982, (High taxed state of residence=1, 0 otherwise))
+   + ht: numeric feature variable - (HEIGHT IN CENTIMETERS IN 1971)
+   + income:categorical, ordinal feature variable	- (TOTAL FAMILY INCOME IN 1971  (11:<$1000, 12: 1000-1999, 13: 2000-2999, 14: 3000-3999, 15: 4000-4999, 16: 5000-5999, 17: 6000-6999, 18: 7000-9999, 19: 10000-14999, 20: 15000-19999, 21: 20000-24999, 22: 25000+))
+
+   + marital:	categorical feature variable - (MARITAL STATUS IN 1971  (1: Under 17, 2: Married, 3: Widowed, 4: Never married, 5: Divorced, 6: Separated, 8: Unknown))
+   + price71:	numeric feature variable - (AVG TOBACCO PRICE IN STATE OF RESIDENCE 1971 (US$2008))
+   + price71_82:numeric feature variable - (DIFFERENCE IN AVG TOBACCO PRICE IN STATE OF RESIDENCE 1971-1982 (US$2008))
+   + price82:	numeric feature variable - (AVG TOBACCO PRICE IN STATE OF RESIDENCE 1982 (US$2008))
+   + qsmk: categorical feature variable - (	QUIT SMOKING BETWEEN 1ST QUESTIONNAIRE AND 1982, (1:YES, 0:NO))
+   + race: categorical feature variable - ( (0: WHITE 1: BLACK OR OTHER IN 1971) )
+   + sbp:	numeric feature variable - (SYSTOLIC BLOOD PRESSURE IN 1982)
+   + school: categorical feature variable - (HIGHEST GRADE OF REGULAR SCHOOL EVER  IN 1971)
+   + seqn:	categorical feature variable (UNIQUE PERSONAL IDENTIFIER)
+   + sex:	binary feature variable - ((0: MALE 1: FEMALE))
+   + smokeintensity:numeric feature variable - (NUMBER OF CIGARETTES SMOKED PER DAY IN 1971)
+   + smkintensity: numeric feature variable - (82_71	INCREASE IN NUMBER OF CIGARETTES/DAY BETWEEN 1971 and 1982)
+   + smokeyrs:numeric feature variable - (YEARS OF SMOKING)
+   + tax71:	numeric feature variable - (TOBACCO TAX IN STATE OF RESIDENCE 1971 (US$2008))
+   + tax71_82:numeric feature variable - (DIFFERENCE IN TOBACCO TAX IN STATE OF RESIDENCE 1971-1982 (US$2008))
+   + tax82:numeric feature variable - (TOBACCO TAX IN STATE OF RESIDENCE 1971 (US$2008))
+   + wt71: numeric feature variable - (	WEIGHT IN KILOGRAMS  IN 1971)
+   + wt82: numeric feature variable - (	WEIGHT IN KILOGRAMS  IN 1982)
+   + wt82_71: numeric feature variable - (	WEIGHT CHANGE IN KILOGRAMS)
+   + wtloss: binary feature variable	USE WEIGHT LOSS MEDICATION IN 1971,  1:EVER, 0:NEVER`
+
+
+\
+
+## Descriptive Statistics/Graphs/Fetaure engineering
+
+
+Next, we provide descriptive statistics of the feature variables in our sample for each of the Target variable groups.
+
+```{r tabl, results='asis'}
+
+#conflicts()
+#getAnywhere(select)
+# Keep only selected columns
+nhefs_selected <- nhefs %>% dplyr::select(qsmk, wt82_71, wtloss, wt82, tax71,wt71, tax82, tax71_82, smokeyrs, smokeintensity, yrdth,
+                                          smkintensity82_71, sex, seqn, school,sbp, dbp, race, price82, price71_82, price71, marital, income, ht, 
+                                          hightax82, hf, hbpmed, hbp, exercise, education, diabetes, death, chroniccough, cholesterol, 
+                                          bronch, asthma, alcoholtype, alcoholpy, alcoholfreq, age, active, weakheart)
+#str(nhefs)
+
+#Assign labels from above to variables
+nhefs_selected <- convert_to_factor(nhefs_selected, var_labels)
+#install.packages("sjlabelled")
+#library(sjlabelled)
+
+
+# Assign labels to variables
+for (var in names(labels_list)) {
+  if (var %in% names(nhefs_selected)) {
+    label(nhefs_selected[[var]]) <- labels_list[[var]]
+  } else {
+    warning(paste("Variable", var, "does not exist in the dataset."))
+  }
+}
+
+library(gt)
+#table(nhefs_selected$sex, useNA = "always")
+#table(is.na(nhefs$wt82_71), useNA = "always")
+overalltab<-table1(~wt71+wt82+wt82_71+age+race+sex+marital+school+education+smokeyrs+hf+smokeintensity+dbp+sbp+hbp+hbpmed+alcoholtype+diabetes+chroniccough+
+                    income+wtloss+cholesterol+bronch+asthma+weakheart+active+exercise+alcoholfreq+tax71+tax82+hightax82+price71+price82+price71_82+tax71_82 | qsmk,
+                   data=nhefs_selected,
+       caption="Table 1: Descriptive Statistics stratified by smoking cessation status in year 1982 since the first questionnaire", 
+       footnote="Data source:NHEFS Sample Dataset", topclass="Rtable1-zebra")
+#overalltab
+
+overalltab1 <- table1(
+  ~wt71+wt82+wt82_71+age+race+sex+marital+school+education+smokeyrs+hf+smokeintensity+dbp+sbp+hbp+hbpmed+alcoholtype+diabetes+chroniccough+
+                    income+wtloss+cholesterol+bronch+asthma+weakheart+active+exercise+alcoholfreq+tax71+tax82+hightax82+price71+price82+price71_82+tax71_82| qsmk,
+  data = nhefs_selected,
+  caption = "Table 1: Descriptive Statistics stratified by smoking cessation status in year 1982 since the first questionnaire",
+  footnote = "Data source: NHEFS Sample Dataset",
+  topclass = "Rtable1-zebra"
+)
+
+
+```
+
+
+```{r overtab}
+kable(overalltab1, caption = "Table 1: Descriptive Statistics stratified by smoking cessation status in year 1982 since the first questionnaire")
+```
+
+
+
+Overall summary Mean(SD), Median[Min, Max] of numeric feature variables and counts(percentages) of feature variables of the NHEFS subset for our analysis are provided in **Table \@ref(tab:overtab)** From the table, we see that the group that quits smoking on the average had higher change in weight in 1982 after quitting in 1971. Overall, about 26% of the sample quit smoking at the beginning of the questionnaires. There were more Whites overall than Black or other ethnicity while 78% were married. On average, the mean age of the sample was 44 years. On average, those who quit smoking in 1982 had a higher gain in weight change compared to those who did. And there were more White participants than other race groups. Also, there were more males that female participants in addition to most participants having completed high school at the beginning of the survey. 
+
+
+
+
+
+
+```{r edag}
+#histograms and bar charts
+library(gridExtra)
+
+# Create histograms for weight change, price change and tax change  
+hist1 <- ggplot(nhefs_selected, aes(x = price71_82)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "purple", color = "black", alpha = 0.5) +
+  geom_density(color = "blue", size = 1) +  # Blue density line
+  labs(title = "Diff. in avg. price Change 1982-1971 ($)", x = "Price Change ($)", y = "Density") #  not normal
+
+hist2 <- ggplot(nhefs_selected, aes(x = tax71_82)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "purple", color = "black", alpha = 0.5) +
+  geom_density(color = "blue", size = 1) +  # Blue density line
+  labs(title = "Diff. in Tobacco Tax in 1982-1972 ($)", x = "Tax Change ($)", y = "Density") 
+
+hist3<- ggplot(nhefs_selected, aes(x = wt82_71)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "purple", color = "black", alpha = 0.5) +
+  geom_density(color = "blue", size = 1) +  # Blue density line
+  labs(title = "Weight Chg. 1982-1971 (kg)", x = "Weight Change (kg)", y = "Density") 
+
+
+
+             
+
+den1<-ggplot(nhefs_selected, aes(x = price71_82, fill = factor(qsmk))) +scale_fill_manual(values = c("Quit" = "lightblue", "Did Not Quit" = "purple"))+
+  geom_density(alpha = 0.5) + 
+  labs(title = "Density Plot of Change in Price of Cigarette: 1982 - 1971 (kg) by Smoking Status",
+       x = "Tax Change", 
+       y = "Density",
+       
+       fill = "Smoking Status") +
+  theme_minimal()
+
+den2<-ggplot(nhefs_selected, aes(x = tax71_82, fill = factor(qsmk))) +scale_fill_manual(values = c("Quit" = "lightblue", "Did Not Quit" = "purple"))+
+  geom_density(alpha = 0.5) + 
+  labs(title = "Density Plot of Tax Change: 1982-1971 by Smoking Status",
+       x = "Tax Change", 
+       y = "Density",
+       fill = "Smoking Status") +
+  theme_minimal()
+
+den3<-ggplot(nhefs_selected, aes(x = wt82_71, fill = factor(qsmk))) +scale_fill_manual(values = c("Quit" = "lightblue", "Did Not Quit" = "purple"))+
+  geom_density(alpha = 0.5) + 
+  labs(title = "Density Plot of Weight Change : 1982 - 1971 (kg) by Smoking Status",
+       x = "Tax Change", 
+       y = "Density",
+       
+       fill = "Smoking Status") +
+  theme_minimal()
+
+
+#grid.arrange(hist1, hist2,hist3, ncol=2)
+#grid.arrange(den1, den2,den3, ncol=2)
+
+```
+
+```{r edagrpahs, fig.cap="Selected Indpendent Feature Variable Plots", fig.align="center", fig.width=10, fig.height=8}
+   grid.arrange(hist1, den1,  hist2, den2, hist3, den3, ncol=2)
+```
+
+In **Figure \@ref(fig:edagrpahs)**, only weight change from 1971 to 1982 was approximately normal, price of tobacco and associated tax did not appear normal. For instance change in tax on cigarettes shows most common tax differences are clustered between 0.4 and 0.8 dollars and is bimodal with positive skewness. The 2 feature variables that are not normal will be standardized for analysis in our model generation and predictions.
+
+In summary, 
+
+  + Price and tax increases occurred across the board from 1971 to 1982 but did not vary dramatically by smoking status.
+  + Weight change is the only variable showing a slight behavioral difference—quitters may have gained more weight post-cessation.
+
+
+
+
+
+```{r edagrpahs2}
+#quit smoking status
+smokestat_bar <- ggplot(nhefs_selected, aes(x = qsmk, fill = qsmk)) +
+  geom_bar(position = "dodge", stat = "count") +
+  geom_text(
+    aes(label = after_stat(scales::percent(prop)), group = 1),
+    stat = "prop",
+    vjust = -0.5
+  ) +
+  labs(
+    title = "Smoking Status",
+    x = "Smoking Status",
+    y = "Proportion",
+    fill = "Smoking Status"
+  ) +
+  scale_fill_manual(values = c("Did Not Quit" = "maroon", "Quit" = "blue")) +
+  theme_classic()
+
+
+# Convert categorical variables to factors
+nhefs_selected$qsmk <- as_factor(nhefs_selected$qsmk)
+# Convert "smkintensity82_71" to numeric
+nhefs_selected$smkintensity82_71 <- as.numeric(nhefs_selected$smkintensity82_71)
+nhefs_selected$smokeyrs <- as.numeric(nhefs_selected$smokeyrs)
+# Convert "age" to numeric
+nhefs_selected$age <- as.numeric(nhefs_selected$age)
+
+
+#feature enginner martial status
+
+library(dplyr)
+
+nhefs_selected <- nhefs_selected %>%
+  mutate(marital_grouped = factor(case_when(
+    as.character(marital) == "Married" ~ "Married",
+    TRUE ~ "Others"
+  ), levels = c("Married", "Others")))
+
+#table(nhefs_selected$marital_grouped)
+
+# smoking studys by marital status
+smoke21<-ggplot(nhefs_selected, aes(x = marital_grouped, fill = qsmk)) +
+  geom_bar(position = "dodge") +  # Bars placed side by side
+    geom_text(
+    aes(label = after_stat(scales::percent(prop)), group = 1),
+    stat = "prop",
+      position = position_dodge(width = 0.9),
+  vjust = -0.6
+  ) +
+  labs(title = "Smoking Status by Grouped Marital Status", x = "Grouped Marital Status", y = "Count", fill = "Smoking Status")+
+  scale_fill_manual(values = c("Did Not Quit" = "maroon", "Quit" = "blue"))
+
+
+smoke2<-ggplot(nhefs_selected, aes(x = marital_grouped, y = qsmk, size = age, color = smkintensity82_71)) +
+  geom_jitter(alpha = 0.7) +  # Adds random noise to avoid overplotting
+  labs(title = "Smoking Status by Grouped Marital Status, Sized by Age",
+       x = "Marital Status", y = "Smoking Status", color = "Increase in number of cigrettes smoked between 1971 and 1982", size = "Age")+
+  scale_color_gradient(low = "lightblue", high = "darkblue")+
+  coord_flip()
+```
+
+```{r twog, fig.cap="Selected Indpendent Feature Variable Plots", fig.align="center", fig.width=8, fig.height=6}
+   grid.arrange( smoke21, smokestat_bar, ncol=2)
+   
+```
+
+```{r twogg, fig.cap="Selected Indpendent Feature Variable Plots", fig.align="center", fig.width=8, fig.height=6}
+   smoke2
+   
+```
+
+
+
+**Figure \@ref(fig:twog)** show a bar plot of the number of smokers and then grouped by martial status. More people did not quit smoking compared to those who switched and most married participants were smokers in 1971. The marital status variable used here was feature engineered by grouping all non-married participants into one group to avoid having married groups with few participants.
+
+And **Figure \@ref(fig:twogg)**  bubble plot above also explores the relationship between marital status, smoking cessation, age, and historical cigarette consumption. It appears that smoking status is not strongly influenced by marital status or age alone, as all quadrants show a wide range of ages and smoking intensities. However, the density of smokers who did not quit seems higher among married individuals. Detailed analysis will help determine if these variables influence smoking cessation. 
+
+
+The plot below shows feature engineering of number of years spent smoking in which, a log transformation of this feature is employed using box-cox transformation. We see that the plot of the actual data and the transformed data shows the transformed data is approximately normal compared to the observed data. This transformation will improve accuracy, reduce errors in our models as the skewness of the variable that biases the results are removed via the transformation.
+
+```{r box,  fig.cap="Box-Cox Transformation", fig.align="center", fig.width=6, fig.height=6}
+
+smokeyrs1<- ggplot(nhefs_selected, aes(x = smokeyrs)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "purple", color = "black", alpha = 0.5) +
+  geom_density(color = "blue", size = 1) +  # Blue density line
+  labs(title = "Years of smoking", x = "Years", y = "Density") 
+
+# Ensure all values are positive (shift if necessary) to apply box-cox to mental health
+
+min_value <- min(nhefs_selected$smokeyrs, na.rm = TRUE)  # Ignore NA values
+if (min_value <= 0) {
+  nhefs_selected$smokeyrs <- nhefs_selected$smokeyrs + abs(min_value) + 1
+}
+
+library(MASS)
+# Perform Box-Cox transformation
+boxcox_result <- boxcox(lm(nhefs_selected$smokeyrs ~ 1), lambda = seq(-2, 2, 0.1))  # Fit a simple model
+
+# Find the optimal lambda
+lambda_optimal <- boxcox_result$x[which.max(boxcox_result$y)]
+lambda_optimal
+
+
+
+#Apply the transformation with the optimal lambda
+transformed_data <- if (lambda_optimal == 0) {
+  log(transformed_data$smokeyrs)
+} else {
+  (nhefs_selected$smokeyrs^lambda_optimal - 1) / lambda_optimal
+}
+
+pooledData <- data.frame(OriginalData=nhefs_selected$smokeyrs, TransformedData=transformed_data)
+## Reshape the data - stacking the values and assigning a variable ID.
+
+pooledData$ID <- 1:nrow(pooledData)  # Create an ID variable
+LongFormatData <- melt(pooledData, id.vars = "ID")  # Now ID is fixed
+
+grp.col = c("navy", "darkred")
+names(grp.col) = levels(LongFormatData$variable)
+
+##
+ggp = ggplot(LongFormatData,aes(x=value, fill=variable, color = variable)) + 
+  geom_density(alpha=0.5, na.rm = TRUE) + 
+  scale_color_manual(values = c("red", "blue")) +
+  ggtitle("Distributions of Original and Transformed Data") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        legend.title = element_text(face = "bold", hjust = 0.5),
+        theme(legend.position.inside = c(.9, .75)))  
+#
+smokeyrs2 <- ggplotly(ggp)   # ggplotly's legend is always on top right by default!
+smokeyrs2
+
+
+#add transformed data to original
+nhefs_selected$smokeyrs_transformed <- transformed_data
+```
+
+Another feature engineering method was applied to income where we grouped the data into 4 groups by finding the midpoint of the income groups and using these values to group them into lowest. mid-low, High-mid and Highest groups. This also ensures more balanced groups than the individual groups.
+
+```{r income, fig.cap="Income Feature Engineered", fig.align="center", fig.width=8, fig.height=6}
+
+#1. Convert the income labels into numeric values (e.g., use midpoints)
+#2. Calculate quartiles
+#3. Create a new variable for income quartile group
+
+# Step 1: Make a named vector of income midpoints
+income_midpoints <- c(
+  "<$1000" = 500,
+  "1000-1999" = 1500,
+  "2000-2999" = 2500,
+  "3000-3999" = 3500,
+  "4000-4999" = 4500,
+  "5000-5999" = 5500,
+  "6000-6999" = 6500,
+  "7000-9999" = 8500,
+  "10000-14999" = 12500,
+  "15000-19999" = 17500,
+  "20000-24999" = 22500,
+  "25000+" = 26000  # Approximate
+)
+
+
+nhefs_selected <- nhefs_selected %>%
+  mutate(
+    income_mid = income_midpoints[income],  # map category to midpoint
+    income_quartile = ntile(income_mid, 4)  # split into 4 quartiles
+  )
+
+nhefs_selected <- nhefs_selected %>%
+  mutate(income_quartile = factor(
+    income_quartile,
+    levels = 1:4,
+    labels = c("Lowest", "Low-Mid", "High-Mid", "Highest")
+  ))
+
+
+library(dplyr)
+
+ggplot(
+  nhefs_selected %>%
+    filter(!is.na(income_quartile), !is.na(education), !is.na(qsmk)),
+  aes(x = income_quartile, fill = education)
+) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ qsmk) +
+  labs(
+    title = "Proportion of Education Levels by Income and Smoking Status",
+    x = "Income Quartile",
+    y = "Proportion",
+    fill = "Education Level"
+  ) +
+  theme_classic()
+
+
+
+
+```
+
+
+In **Figure \@ref(fig:income)** , the plot shows a strong relationship between income, education level, and smoking behavior. Higher income groups are associated with higher levels of education. Additionally, individuals who quit smoking tend to be more educated across all income quartiles. In contrast, those who did not quit are more likely to have lower education, particularly in the lowest income groups. This suggests that both income and education may play significant roles in smoking cessation behavior
+
+
+
+
+```{r others}
+
+
+alcol_h <- ggplot(nhefs_selected, aes(x = alcoholtype)) +
+  geom_bar(aes(fill = factor(sex)), width = 0.9, position = "dodge") +
+  facet_wrap(~ qsmk) +
+  labs(
+    title = "Type of Alcohol Drank in 1971",
+    x = "Type of Alcohol",
+    y = "Count",  # or "Percent" if you're using proportions
+    fill = "Sex"
+  )+
+  scale_fill_manual(
+    values = c("Male" = "steelblue", "Female" = "firebrick"),
+  ) +
+  theme_classic()
+
+#alcol_h
+
+# Example: Grouped bar chart, facet by smoking status
+race_sex <- ggplot(nhefs_selected, aes(x = race, fill = factor(sex))) +
+  geom_bar(position = "dodge") +scale_fill_manual(values = c("Male" = "steelblue", "Female" = "firebrick"))+
+  facet_wrap(~ qsmk) +
+  labs(
+    title = "Sex by Race and Smoking Cessation Status",
+    x = "Race",
+    y = "Count",
+    fill = "Gender"
+  ) +
+  theme_minimal()
+
+#race_sex
+
+price<-ggplot(nhefs_selected, aes(x = tax71_82, y = wt82_71, color = factor(qsmk))) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    title = "Price in 1971 vs. Price in 1982 by Smoking Status",
+    x = "Price in 1971",
+    y = "Price in 1982",
+    color = "Smoking Status"
+  )+ 
+  scale_color_manual(values = c("Quit" = "blue", "Did Not Quit" = "brown"))+
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal()
+#price
+
+tax<-ggplot(nhefs_selected, aes(x = tax71_82, y = wt82_71, color = factor(qsmk))) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    title = "Price in 1971 vs. Price in 1982 by Smoking Status",
+    x = "Price in 1971",
+    y = "Price in 1982",
+    color = "Smoking Status"
+  )+ 
+  scale_color_manual(values = c("Quit" = "blue", "Did Not Quit" = "brown"))+
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal()
+#tax
+
+
+weight<-ggplot(nhefs_selected, aes(x = price71_82, y = wt82_71, color = factor(qsmk))) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    title = "Tax of tobacco in 1971 vs. Tax of tobacco in 1982 by Smoking Status",
+    x = "Tax in 1971",
+    y = "Tax in 1982",
+    color = "Smoking Status"
+  )+ scale_fill_manual(values = c("Quit" = "blue", "Did Not Quit" = "brown"))+
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal()
+#weight
+
+
+# Create a unique id for each observation and convert price variables to numeric
+data_long <- nhefs_selected %>%
+  dplyr::select(qsmk, price71, price82) %>%
+  mutate(across(c(price71, price82), as.numeric)) %>%
+  mutate(id = row_number()) %>%  # Create unique identifier for each row
+  pivot_longer(
+    cols = c(price71, price82),
+    names_to = "year",
+    values_to = "price"
+  )
+
+
+sex_smoke<-ggplot(nhefs_selected, aes(x = factor(sex), y = smokeintensity, fill = factor(sex))) +
+  geom_boxplot() +
+  labs(
+    title = "Smoking Intensity in 1971 by Sex",
+    x = "Sex",
+    y = "Cigarettes per Day",
+    fill = "Sex"
+  ) +
+  scale_fill_manual(values = c("Male" = "skyblue", "Female" = "pink"), labels = c("Male", "Female")) +
+  theme_classic()
+
+#sex_smoke
+
+```
+
+```{r othersg, fig.cap="Alcohol Type Feature Engineered", fig.align="center", fig.width=8, fig.height=6}
+   grid.arrange(alcol_h,  sex_smoke, ncol=2)
+```
+
+**Figure \@ref(fig:othersg)** shows that gender and smoking status play a role in alcohol preferences. Males who continued smoking had high rates of beer consumption, while females leaned more toward liquor and other types. Individuals who quit smoking generally drank less alcohol overall, with a more noticeable drop among males. The data also indicate that even among quitters, liquor and other types of alcohol remained popular for females.
+It also shows that smoking and alcohol use are linked generally among men.
+
+In the smoking intensity boxplot, it shows that in 1971, males smoked more cigarettes per day than females on average. Males also had more variability in their smoking behavior, including some extreme outliers with very high cigarette use. Females had lower and more consistent smoking intensity, suggesting a potential gender-based difference in smoking patterns during that time period.
+
+
+
+# Multilple Imputation
+To preserve the sample size and minimize bias, multiple imputation was applied to the NHEFS dataset. This approach allows for more accurate estimation by accounting for the uncertainty associated with missing data, ultimately leading to more reliable and valid results.Continuous variables were imputed using predictive mean matching (PMM), which maintains the original distribution and avoids unrealistic values. Categorical variables were imputed using logistic or multinomial regression, depending on the number of categories, to ensure consistency with their underlying structure.
+The first of the five multiply imputated datasets was used for further analysis.
+
+
+
+``` {r MI, eval = FALSE}
+#implement MICE
+
+analytic_dset <- nhefs_selected [, 
+                                       c("qsmk", "wt82_71", "age","race", "sex", "marital", "school", "education", 
+                                        "smokeyrs", "hf", "smokeintensity",  "dbp","sbp","hbp", "hbpmed", "alcoholtype", "diabetes", "chroniccough",
+                                       "income", "wtloss", "cholesterol", "bronch", "asthma", "weakheart", "active",  
+                                       "exercise", "alcoholfreq", "tax71", "tax82", "hightax82" , "price71" , "price82", "tax71_82", "price71_82",    
+                                       "marital_grouped", "income_quartile", "smokeyrs_transformed")]
+
+final_analytic_dset <-analytic_dset %>%
+  
+  dplyr::select(qsmk, wt82_71, age, race, sex, marital, school, education, smokeyrs, hf, smokeintensity, dbp, sbp, hbp, hbpmed, alcoholtype, diabetes, 
+                chroniccough,income, wtloss, cholesterol, bronch, asthma, weakheart, active, exercise, alcoholfreq, tax71, tax82, hightax82, price71, price82, 
+                tax71_82, price71_82, marital_grouped, income_quartile, smokeyrs_transformed) %>%
+  
+  mutate(across(c(wt82_71, age,  smokeyrs, hf, smokeintensity, dbp, sbp, hbp, cholesterol, tax71, tax82, hightax82, price71, price82, tax71_82, price71_82, 
+                  smokeyrs_transformed), as.numeric),
+         across(c(hf, school,hbp, alcoholtype, marital_grouped, income_quartile),as.factor))
+
+
+imp5 <- mice(final_analytic_dset, method = c("logreg", "pmm", "pmm", "logreg","logreg","polyreg", "polyreg", "polyreg", "pmm", "logreg", "pmm", "pmm","pmm", 
+
+                                             "logreg", "polyreg", "polyreg","polyreg", "logreg", "polyreg","polyreg", "pmm", "pmm", "logreg", "logreg", "polyreg", 
+                                             "polyreg","polyreg", "pmm", "pmm", "pmm", "pmm", "pmm", "pmm", "pmm", "logreg", "polyreg", "pmm"),
+             
+                             maxit = 10,  # iterating 10 cycles to complete each imputed data set
+                              m = 5,       # generate 5 imputed data set
+                              seed = 134,
+                              print=F)     # suppress printouts
+
+first_imputed_data <- complete(imp5, 1)
+#summary(first_imputed_data)  # Check for missing values
+#str(first_imputed_data)      # Ensure correct data types
+#md.pattern(final_analytic_dset)  # Visualize missing data pattern
+
+```
+
+
+``` {r Features, eval = FALSE}
+
+#first_imputed_data
+saveRDS(first_imputed_data, "proj2_analytic_data.rds")
+saveRDS(imp5, "imp5.rds")
+```
+
+# Pincipal Components Analysis
+As a result of the high dimensionality of our dataset and the presence of multicollinearity among variables (e.g., price/tax/weight in 1971 and weight/price/tax in 1982, blood pressure measures, etc), Principal Component Analysis (PCA) was performed to reduce redundancy and summarize the data more efficiently ensuring that the original correlated variables are transformed into a smaller set of uncorrelated components that capture the majority of the variance in the data. This step helps improve model performance.
+
+
+``` {r pca}
+
+#first_imputed_data
+final <-  readRDS("proj2_analytic_data.rds")
+#class(final)
+
+# Select only numerical columns for PCA
+num_vars <- final[, sapply(final, is.numeric)]
+
+#remove numeric outcome
+num_vars <- num_vars[, !(names(num_vars) %in% "wt82_71")]
+
+#summary(num_vars)
+
+# Standardize the data (important for PCA) -
+num_vars_scaled <- scale(num_vars)
+
+# Perform PCA
+pca_result <- prcomp(num_vars_scaled, center = TRUE, scale. = TRUE)
+
+# Summary of PCA
+cat("PCA results showing variance explained by each PC:\n")
+summary(pca_result)
+
+#plot(pca_result, type = "l", main = "Scree Plot")
+
+
+```
+
+We first ensured standardization of the variables to ensure comparability across different scales. The first few principal components explained a significant proportion of the total variance, allowing us to retain key information while reducing the number of input variables. The scree plot in **Figure \@ref(fig:screeplt)** ,  shows that the first few principal components explain most of the variation in the dataset. The first two components alone account for over 50% of the total variance, while the first four components explain more than 75%. There is a visible "elbow" at around the third or fourth component, suggesting that retaining the first 3–4 components would be a good balance between dimensionality reduction and information preservation. We made the decision to include the 5th component capturing over 80% of the variance in the data.
+
+
+```{r, screeplt, fig.cap="Scree Plot from PCA summary", fig.align="center", fig.width=8, fig.height=6}
+
+# Scree plot to visualize variance explained
+library(ggplot2)
+#install.packages("factoextra")  # Install the package
+library(factoextra)  # Load the package
+
+fviz_eig(pca_result)
+
+#summary(pca_result)
+cat("Top contributing PCS explaing greater than 75% variance (eigen values greater than 1):\n")
+eigenvalues <- (pca_result$sdev)^2
+eigenvalues #5 eigen values greater than 1 and explains >75% variance
+
+#pca scores 
+pc_scores <- pca_result$x
+
+# Add to original imputed dataset
+combined_data <- cbind(final, pc_scores)
+
+```
+
+A plot of the pcloadings for the firs 5 components is provided in **Figure \@ref(fig:pcaloadings)**. This helped us to get a general team of the variables contributing to the components in order to rename the PCS appropriately. The plots a summary of the feature components are provided below.
+
+
+
+
+
+```{r, pcaloadings, fig.cap="Variable Loadings from PCA analysis", fig.align="center", fig.width=10, fig.height=12}
+
+# Top contributors to PC1 (signed)
+
+#loadings for pc1 and sorting the absolut values for plot to get the most contributing variables
+loadings_pc1 <- pca_result$rotation[, 1]  # PC1 is the first column
+abs_loadings_pc1 <- abs(loadings_pc1)
+sorted_pc1 <- sort(abs_loadings_pc1, decreasing = TRUE)
+top_pc1 <- data.frame(Variable = names(sorted_pc1), Loading = sorted_pc1)
+#cat("Top contributing variables to PC1:\n")
+#top_pc1
+
+loadings_pc2 <- pca_result$rotation[, 2]  # PC2 is the first column
+abs_loadings_pc2 <- abs(loadings_pc2)
+sorted_pc2 <- sort(abs_loadings_pc2, decreasing = TRUE)
+top_pc2 <- data.frame(Variable = names(sorted_pc2), Loading = sorted_pc2)
+#cat("Top contributing variables to PC2:\n")
+#top_pc2
+
+loadings_pc3 <- pca_result$rotation[, 3]  # PC3 is the first column
+abs_loadings_pc3 <- abs(loadings_pc3)
+sorted_pc3 <- sort(abs_loadings_pc3, decreasing = TRUE)
+top_pc3 <- data.frame(Variable = names(sorted_pc3), Loading = sorted_pc3)
+#cat("Top contributing variables to PC3:\n")
+#top_pc3
+
+loadings_pc4 <- pca_result$rotation[, 4]  # PC3 is the first column
+abs_loadings_pc4 <- abs(loadings_pc4)
+sorted_pc4 <- sort(abs_loadings_pc4, decreasing = TRUE)
+top_pc4 <- data.frame(Variable = names(sorted_pc4), Loading = sorted_pc4)
+#cat("Top contributing variables to PC4:\n")
+#top_pc4
+
+loadings_pc5 <- pca_result$rotation[, 5]  # PC3 is the first column
+abs_loadings_pc5 <- abs(loadings_pc5)
+sorted_pc5 <- sort(abs_loadings_pc5, decreasing = TRUE)
+top_pc5 <- data.frame(Variable = names(sorted_pc5), Loading = sorted_pc5)
+#cat("Top contributing variables to PC4:\n")
+#top_pc5
+
+
+
+
+#plot signed versions
+# Get the PC1 loadings (signed) - no absolute version 
+loadings_pc1 <- pca_result$rotation[, 1]
+# Put into a data frame
+pc1_df <- data.frame(
+  Variable = names(loadings_pc1),
+  Loading = loadings_pc1
+)
+
+
+pc1_load_plot <- ggplot(pc1_df, aes(x = reorder(Variable, Loading), y = Loading)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(
+    title = "PC1 Loadings by Variable",
+    x = "Variable",
+    y = "Loading (Signed)"
+  ) +
+  theme_minimal()
+
+# Get the PC2 loadings (signed) - no absolute version 
+loadings_pc2 <- pca_result$rotation[, 2]
+# Put into a data frame
+pc2_df <- data.frame(
+  Variable = names(loadings_pc2),
+  Loading = loadings_pc2
+)
+
+
+pc2_load_plot<-ggplot(pc2_df, aes(x = reorder(Variable, Loading), y = Loading)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(
+    title = "PC2 Loadings by Variable",
+    x = "Variable",
+    y = "Loading (Signed)"
+  ) +
+  theme_minimal()
+
+
+# Get the PC3 loadings (signed) - no absolute version 
+loadings_pc3 <- pca_result$rotation[, 3]
+# Put into a data frame
+pc3_df <- data.frame(
+  Variable = names(loadings_pc3),
+  Loading = loadings_pc3
+)
+
+
+pc3_load_plot <- ggplot(pc3_df, aes(x = reorder(Variable, Loading), y = Loading)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(
+    title = "PC3 Loadings by Variable",
+    x = "Variable",
+    y = "Loading (Signed)"
+  ) +
+  theme_minimal()
+
+
+# Get the PC4 loadings (signed) - no absolute version 
+loadings_pc4 <- pca_result$rotation[, 4]
+# Put into a data frame
+pc4_df <- data.frame(
+  Variable = names(loadings_pc4),
+  Loading = loadings_pc4
+)
+
+pc4_load_plot <- ggplot(pc4_df, aes(x = reorder(Variable, Loading), y = Loading)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(
+    title = "PC4 Loadings by Variable",
+    x = "Variable",
+    y = "Loading (Signed)"
+  ) +
+  theme_minimal()
+
+
+
+# Get the PC5 loadings (signed) - no absolute version 
+loadings_pc5 <- pca_result$rotation[, 5]
+# Put into a data frame
+pc5_df <- data.frame(
+  Variable = names(loadings_pc5),
+  Loading = loadings_pc5
+)
+
+
+pc5_load_plot <- ggplot(pc5_df, aes(x = reorder(Variable, Loading), y = Loading)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(
+    title = "PC5 Loadings by Variable",
+    x = "Variable",
+    y = "Loading (Signed)"
+  ) +
+  theme_minimal()
+
+#set all plots
+
+grid.arrange(
+  pc1_load_plot, pc2_load_plot, pc3_load_plot, pc4_load_plot, pc5_load_plot,ncol=2,
+   top = textGrob("Plots of Top contributing variables to each PC",  gp = gpar(fontsize = 16, fontface = "bold"))
+)
+
+colnames(pc_scores)[1:5] <- c(
+  "price_n_taxes", 
+  "patient_kters", 
+  "price_vs_ktics",
+  "health_vs_price",
+  "smokeint_vs_age"
+)
+
+#add new pc variables to data for use 
+# Add to original imputed dataset
+combined_data <- cbind(combined_data, pc_scores[, 1:5])
+#summary(combined_data)
+
+#check correlation of transformed values
+check_corr<-ggplot(combined_data, aes(x = price_n_taxes, y = health_vs_price)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "PC1 vs PC4", x = "Price & Taxes", y = "Health vs Price")
+
+
+#cat("Correlation of top 5 PCs with the outcome variable:\n")
+#cor(combined_data[, c("price_n_taxes", "patient_kters", "price_vs_ktics", "smokeint_vs_age", "wt82_71")])
+
+
+```
+
+
++ PC1 strongest feature contributions were from tax71, price71, tax82, price82, and tax71_82. PC1 appears to capture price and tax levels overtime (price_n_taxes). All had negative loadings.
++ PC2 top features were smokerys, smokerys_transformed, age, sbp (systolic BP), and cholesterol. PC2 is all about individual characteristics especially smoking and age. PC2 had moslty negative loadings(patient_kters).
++ PC3 features contributing the most were price71_82, tax71_82, dbp, and sbp. A mixture of positive abd negative loadings capturing changes in pricing and taxation(price_vs_ktics).
++ PC4 signals were from dbp, sbp, hightax82, cholesterol, price82 with some signal of price, and some physiological variables.
++ PC5 was dominated by smoking intensity with a large negative loading. Smoking intensity seems to be isolated from other behavioral or demographic features observed in other PCs.
+
+The derived principal component scores were added as new features to our model for analysis.
+
+
+# Regularized Regression
+In this section, we will conduct three Regularized regressions; 1. LASSO, 2. Ridge, and 3. Elastic Net. We will also conduct coefficient path analysis to examine variable selection trends. Using cross-validation, we will determine the optimal regularization parameters and finalize the model by providing the mathematical equations from all 3 regression approaches. 
+
+To explore variable selection and understand the influence of predictors on weight change between 1971 and 1982, regularized regression models were applied. 
+
+## LASSSO, Ridge, and Elastic Net Regression 
+A comprehensive set of all features including demographic, behavioral, clinical, and composite variables like the PCs—were included. The data set was then split into training (80%) and testing (20%) sets to allow for model validation.
+All features were standardized (centered and scaled) using preprocessing steps from the caret package. Cross-validation was used to select the optimal penalty term lambda for each model, ensuring a good trade-off between model complexity and predictive performance.
+
+
+```{r regreg}
+set.seed(123)    # remove the seed by using  set.seed(NULL)
+
+# Load the dataset but remove the variables used in the pcs and add the PCS
+X <- as.matrix(combined_data[,  c( "age","race", "sex", "marital", "school", "education", 
+                                        "smokeyrs", "hf", "hbp", "hbpmed", "alcoholtype", "diabetes", "chroniccough",
+                                       "income", "wtloss", "cholesterol", "bronch", "asthma", "weakheart", "active",    
+                                       "exercise", "alcoholfreq",  "price_n_taxes", "patient_kters", "price_vs_ktics","health_vs_price", "smokeint_vs_age",
+                                   "marital_grouped", "income_quartile")])  # Features (all columns except the target -"qsmk", "wt82_71", )
+
+y <- combined_data$wt82_71  # Target variable (median house value)
+
+# Split the data into training and testing sets
+library(caret)
+train_index <- createDataPartition(y, p = 0.8, list = FALSE)
+X_train <- X[train_index, ]
+X_test <- X[-train_index, ]
+y_train <- y[train_index]
+y_test <- y[-train_index]
+
+# Standardize the data (important for regularization)
+preprocess_params <- preProcess(X_train, method = c("center", "scale"))
+X_train <- predict(preprocess_params, X_train)
+X_test <- predict(preprocess_params, X_test)
+
+## fitting the model
+library(mlbench)
+library(glmnet) 
+fit_lasso<- glmnet(X_train, 
+                      y_train, 
+                      alpha = 1)        # lasso regression 
+fit_ridge <- glmnet(X_train, 
+                    y_train, 
+                    alpha = 0)          # Ridge regression
+fit_elastic_net <- glmnet(X_train, 
+                          y_train, 
+                          alpha = 0.5)  # elastic net
+
+## cross-validation
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1)   # lasso regression - performs both shrinkage and variable selection.
+cv_ridge <- cv.glmnet(X_train, y_train, alpha = 0)   # Ridge regression - which shrinks coefficients but retains all variables.
+cv_elastic_net <- cv.glmnet(X_train, y_train, alpha = 0.5)  # elastic net - offering a balance between the two.
+
+```
+
+
+
+
+
+### Coefficient Path Analysis
+
+Coefficient path analysis using regularized regression (e.g., Lasso) helps visualize how predictors enter or drop from the model as the penalty strength changes. 
+
+
+```{r pathlasso,  fig.cap="LASSO Path Analysis Plot", fig.align="center", fig.width=10, fig.height=8}
+
+par(mar=c(5,4,6,3))
+# Plot coefficient path
+pp<-plot(fit_lasso, xvar = "lambda", label = TRUE,
+     lwd = 1.5,
+     main = "Coefficient Path Analysis: LASSO",
+     cex.main = 0.9,
+     col = rainbow(10))
+abline(v = 1, col = "purple", lty = 4, lwd = 2)
+abline(v = -1, col = "steelblue", lty = 2, lwd = 2)
+
+# Extract the Coefficients at the Optimal Lambda
+lasso_coef <- coef(cv_lasso, s = "lambda.min")
+
+# Convert to a named vector
+coef_values <- as.vector(lasso_coef)
+coef_names <- rownames(lasso_coef)
+
+# Combine and filter
+selected <- data.frame(name = coef_names, coefficient = coef_values)
+selected <- selected[selected$coefficient != 0, ]
+selected <- selected[selected$name != "(Intercept)", ]
+
+selected
+
+#install.packages("plotmo")
+#library(plotmo)
+#plot_glmnet(fit_lasso, label = 10)  # Label the top 10 variables
+
+
+#variables to keep
+#colnames(X_train)[c(11,9,5,3,1)]
+
+```
+
+The **Figure \@ref(fig:pathlasso)**. plot is the coefficient path plot (regularization path) for a Lasso regression model showing how the coefficients of different variables change as the penalty parameter lambda increases as we move from right to left on the x-axis. At the optimal lambda  shown by the dashed vertical line, only a few variables have non-zero coefficients. These selected variables age, hbp, cholesterol and health_vs_price remained the strongest predictors as the Lasso method filters out redundant features.
+
+
+### Cross Validation
+
+```{r rmselasso,  fig.cap="Cross validation plot for Lasso", fig.align="center", fig.width=10, fig.height=8}
+par(mar=c(5,4,6,3))
+## get the range for lambda within the 2 vertical lines
+plot(cv_lasso, main = "RMSE Plot: LASSO",
+     cex.main = 0.9)
+
+```
+
+The cross-validation plot for Lasso regression was used to determine the optimal level of regularization. The lambda value that minimized the mean squared error (lambda.min) selected 4 predictors, to balance complexity with prediction accuracy. 
+
+
+
+
+```{r, crossval}
+# Cross-validation to find the best lambda
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1)
+cv_ridge <- cv.glmnet(X_train, y_train, alpha = 0)
+cv_elastic_net <- cv.glmnet(X_train, y_train, alpha = 0.5)
+##
+# Extract coefficients for the best lambda
+best.lasso.lambda <- cv_lasso$lambda.min
+best.ridge.lambda <- cv_ridge$lambda.min
+best.elastic.net.lambda <- cv_elastic_net$lambda.min
+##
+# Lasso Regression (L1 Regularization): 
+# CAUTION: model formula differs from the regular regression formula 
+lasso_model.opt <- glmnet(X_train, 
+                      y_train, 
+                      alpha = 1,      # lasso regression 
+                      lambda = best.lasso.lambda)   # useser selected alpha, optimal lambda
+                                      # can be obtained through CV (see above)
+lasso_predictions.opt <- predict(lasso_model.opt, 
+                             s = best.lasso.lambda, # user selected lambda value 
+                                      # (regularization paremeter)
+                             newx = X_test)  # test data set 
+# The following RMSE of prediction serves as a validation - one step validation
+lasso_rmse.opt <- sqrt(mean((y_test - lasso_predictions.opt)^2))   
+                                          
+# Ridge Regression (L2 Regularization)
+ridge_model.opt <- glmnet(X_train, y_train, alpha = 0, lambda = best.ridge.lambda)
+ridge_predictions.opt <- predict(ridge_model.opt, s = best.ridge.lambda, newx = X_test)
+ridge_rmse.opt <- sqrt(mean((y_test - ridge_predictions.opt)^2))
+
+# Elastic Net (Combination of L1 and L2)
+elastic_net_model.opt <- glmnet(X_train, y_train, alpha = 0.5, lambda = 0.1)
+elastic_net_predictions.opt <- predict(elastic_net_model.opt, s = 0.1, newx = X_test)
+elastic_net_rmse.opt <- sqrt(mean((y_test - elastic_net_predictions.opt)^2))
+
+RMSE.opt = cbind(LASSO.opt = lasso_rmse.opt, 
+                 Ridge.opt =  ridge_rmse.opt, 
+                 Elasticnet.opt = elastic_net_rmse.opt)
+
+cat("RSME of lasso, Ridg and Elastic:\n")
+
+library(pander)
+pander(RMSE.opt)
+
+
+
+```
+To predict weight change (wt82_71) from a variety of behavioral, demographic, and health-related predictors, regularized regression techniques — Lasso (L1), Ridge (L2), and Elastic Net — were applied. Cross-validation was used to select the optimal lambda (penalty term) for each model to balance bias and variance and prevent overfitting. The Elastic Net model had the lowest RMSE (7.627), suggesting it had the best generalization performance on the test set. However, the differences in RMSE among all three models are relatively small, indicating similar predictive performance overall.
+
+
+### Model Equations
+
+```{r, lasseqn}
+##lasso
+# Extract coefficients for the best lambda
+best_lambda.lasso <- cv_lasso$lambda.min
+coefficients.lasso <- coef(cv_lasso, s = best_lambda.lasso)
+
+# Reconstruct the model equation
+intercept.lasso <- coefficients.lasso[1]
+betas.lasso <- coefficients.lasso[-1]
+
+# Convert betas to a named numeric vector
+beta.values <- as.vector(betas.lasso)
+names(beta.values) <- rownames(betas.lasso)[-1]
+
+# Keep only non-zero betas
+nonzero.betas <- beta.values[beta.values != 0]
+
+
+#cat("LASSO Model equation: y =", round(intercept.lasso, 4), "+",
+ #   paste0(round(nonzero.betas, 4), "*", names(nonzero.betas), collapse = " + "),
+  #  "\n")
+
+
+
+```
+
+The LASSO equation is provided below.
+
+$$
+\text{LASSO Model equation:  Weight change} = 5.9868  - 0.0803\times \text{age} - 0.2681\times \text{hbp}  -0.0065\times \text{cholesterol} - 0.2087\times \text{health_vs_price}  
+$$
+
+
+
+
+
+**Ridge Regression**
+
+```{r, ridge}
+##ridge
+# Extract best lambda and coefficients
+best_lambda.ridge <- cv_ridge$lambda.min
+coefficients.ridge <- coef(cv_ridge, s = best_lambda.ridge)
+
+# Separate intercept and betas
+intercept.ridge <- coefficients.ridge[1]
+betas.ridge <- coefficients.ridge[-1]
+
+# Convert to named numeric vector (preserves variable names)
+beta.values <- as.vector(betas.ridge)
+names(beta.values) <- rownames(betas.ridge)
+
+# Filter only non-zero coefficients
+nonzero.betas <- beta.values[beta.values != 0]
+
+# Build equation string
+terms <- paste0(round(nonzero.betas, 4), "*", names(nonzero.betas))
+equation <- paste("Model equation: y =", round(intercept.ridge, 4), "+", paste(terms, collapse = " + "))
+
+# Print the final result
+#cat(equation, "\n")
+
+
+
+#cat("Model equation: y =", round(intercept.ridge,4), "+", 
+#paste(round(betas.ridge,4), colnames(X), sep = "*", collapse = " + "), "\n")
+```
+
+The Ridge equation is provided below.
+
+$$
+\text{Ridge Model equation:  Weight change} = 7.128 - 0.0395*\times \text{age} + 0.0328\times \text{school}  -0.0077\times \text{smokeyrs} -0.8351\times \text{hf}  
+$$
+$$
+ -0.4373*\times \text{hbp} + 0.1908\times \text{chroniccough}  -0.0066\times \text{cholesterol} -0.0234\times \text{price_n_taxes}  +0.1273\times \text{patient_kters}   
+$$
+$$
+ +5e-04**\times \text{price_vs_ktics} - 0.231\times \text{health_vs_price}  -0.059\times \text{smokeint_vs_age}   
+$$
+
+And the Elastic Net model with the lowest RMSE (7.627) equation is provided below.
+
+```{r, elas}
+##ridge
+# Extract coefficients for the best lambda
+best_lambda.net <- cv_elastic_net$lambda.min
+coefficients.net <- coef(cv_elastic_net, s = best_lambda.net)
+# Reconstruct the model equation
+intercept.net <- coefficients.net[1]
+betas.net<- coefficients.net[-1]
+
+
+# Convert to named numeric vector (preserves variable names)
+beta.values <- as.vector(betas.net)
+names(beta.values) <- rownames(betas.net)
+
+# Filter only non-zero coefficients
+nonzero.betas <- beta.values[beta.values != 0]
+
+# Build equation string
+terms <- paste0(round(nonzero.betas, 4), "*", names(nonzero.betas))
+equation <- paste("Model equation: y =", round(intercept.net, 4), "+", paste(terms, collapse = " + "))
+
+# Print the final result
+#cat(equation, "\n")
+
+
+#cat("Model equation: y =", round(intercept.net,4), "+", 
+ #paste(round(betas.net,4), colnames(X), sep = "*", collapse = " + "), "\n")
+
+```
+$$
+\text{Elastic Net Model equation:  Weight change} = 7.3557 - 0.0759*\times \text{age} - 0.1417\times \text{hbp}  -0.005\times \text{cholesterol} -0.1454\times \text{health_vs_price}  
+$$
+
+
+
+
+# Regularized Logistic Regression
+In this section, we will conduct three Regularized regressions; 1. LASSO, 2. Ridge, and 3. Elastic Net to explore variable selection and understand the influence of predictors on factors the influence a participants ability to quit smoking using several demographic and health related features.
+
+Cross-validation was used to select the optimal penalty strength (lambda), and model performance was evaluated using classification metrics such as accuracy and AUC, sensitivity, specificity.
+
+
+
+## Coefficient Path Analysis
+
+```{r, reglog}
+
+set.seed(321)
+# Convert the response variable to a binary numeric variable
+combined_data$qsmkn <- ifelse(combined_data$qsmk == "Quit", 1, 0)
+
+# Split the data into predictors (X) and response (y)
+
+X <- as.matrix(combined_data[,  c( "age","race", "sex", "marital", "school", "education", 
+                                        "smokeyrs", "hf", "hbp", "hbpmed", "alcoholtype", "diabetes", "chroniccough",
+                                       "income", "wtloss", "cholesterol", "bronch", "asthma", "weakheart", "active",    
+                                       "exercise", "alcoholfreq",  "price_n_taxes", "patient_kters", "price_vs_ktics","health_vs_price", "smokeint_vs_age",
+                                   "marital_grouped", "income_quartile")])  # Features (all columns except the target -"qsmk", "wt82_71", )
+
+
+#X <- model.matrix(qsmkn ~ ., combined_data)[,-1]
+
+#[,c( "age","race", "sex", "marital", "school", "education", 
+#                                        "smokeyrs", "hf", "smokeintensity","hbp", "hbpmed", "alcoholtype", "diabetes", "chroniccough",
+#                                       "income", "wtloss", "cholesterol", "bronch", "asthma", "weakheart", "active",    
+#                                       "exercise", "alcoholfreq", price_n_taxes", "patient_kters", "price_vs_ktics","health_vs_price", "smokeint_vs_age")]  # Remove the intercept column
+y <- combined_data$qsmkn
+
+# Split the data into training and testing sets
+
+trainIndex <- createDataPartition(y, p = 0.8, list = FALSE)
+X_train <- X[trainIndex, ]
+X_test <- X[-trainIndex, ]
+y_train <- y[trainIndex]
+y_test <- y[-trainIndex]
+
+
+
+# Standardize the data (important for regularization) --------- do we need standardization in logistic regression?
+preprocess_params <- preProcess(X_train, method = c("center", "scale"))
+X_train <- predict(preprocess_params, X_train)
+X_test <- predict(preprocess_params, X_test)
+
+
+####################
+# Fit LASSO model(logistic)
+####################
+lasso_model <- glmnet(X_train, y_train, family = "binomial", alpha = 1)
+
+# Cross-validation to find the optimal lambda
+cv_lasso <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
+
+# Optimal lambda
+lambda_lasso <- cv_lasso$lambda.min
+
+# Refit the model with the optimal lambda
+lasso_model_opt <- glmnet(X_train, y_train, 
+                          family = "binomial", 
+                          alpha = 1, 
+                          lambda = lambda_lasso)
+```
+
+
+```{r loglass, fig.cap="Logistic LASSO Path Analysis Plot", fig.align="center", fig.width=10, fig.height=8}
+
+
+## Visualize the impact of lambda on shrinking coefficients
+# Plot coefficient paths
+par(mar=c(5,4,6,2), mfrow=c(1,2)) # 
+plot(lasso_model, xvar = "lambda", label = TRUE,
+     col = rainbow(8),
+     lwd = 1,
+     main = "Coefficient Path Plot: LASSO",
+     cex.main = 0.8)
+text(-6, 0.4, "minimum CV error", col="red", cex = 0.6 )
+
+cv_fit <- cv.glmnet(X_train, y_train, alpha = 1, family = "binomial")
+abline(v = log(cv_fit$lambda.min), col = "red", lty = 4, lwd = 1)
+abline(v = log(cv_fit$lambda.1se), col = "blue", lty = 4, lwd = 1)
+
+plot(cv_lasso, main="Measure of Model Fit: LASSO", cex.main = 0.8)  # need to include pcs to see if numer of variables change for the lambdas
+
+```
+
+```{r}
+# Check lambda.min and lambda.1se
+#cv_fit$lambda.min
+#cv_fit$lambda.1se
+#plot(cv_fit$lambda)
+# Check correlations between variables
+#cor(X_train)
+#summary(y_train)
+# Check the number of features and observations
+#dim(X_train)  # (n, p) where n is number of samples and p is number of features
+# Check if there is perfect separation by checking correlation
+#cor(X_train, y_train)  # Look for any predictor perfectly correlating with the outcome
+
+coef_min <- coef(cv_lasso, s = "lambda.min")
+coef_1se <- coef(cv_lasso, s = "lambda.1se")
+# For lambda.min
+min_coefs <- as.matrix(coef_min)
+selected_min <- data.frame(
+  variable = rownames(min_coefs),
+  coefficient = min_coefs[, 1]
+)
+selected_min <- subset(selected_min, coefficient != 0 & variable != "(Intercept)")
+
+print("Variables selected at lambda.min:")
+print(selected_min)
+
+
+
+
+
+
+
+```
+
+The **Figure \@ref(fig:loglass)**. plot is the coefficient path plot (regularization path) for a Lasso logistic model showing how the coefficients of different variables change as the penalty parameter lambda increases as we move from right to left on the x-axis. The coefficient path plot reveals which variables remain important as regularization increases, with several coefficients shrinking to zero at higher penalty values. Lasso logistic regression selected 5 feature variables as predictors of smoking cessation, including age, school (years of school), chroniccought, price_n_taxes, health_vs_price and smokeint_vs_age.
+
+### Ridge Logistic Regression
+
+```{r, Ridgeparm}
+####################
+# Fit Ridge model
+####################
+ridge_model <- glmnet(X_train, y_train, family = "binomial", alpha = 0)
+
+# Cross-validation to find the optimal lambda
+cv_ridge <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+
+# Optimal lambda
+lambda_ridge <- cv_ridge$lambda.min
+
+# Refit the model with the optimal lambda
+ridge_model_opt <- glmnet(X_train, y_train, 
+                          family = "binomial", 
+                          alpha = 0, 
+                          lambda = lambda_ridge)
+
+
+```
+
+```{r loglas}
+############################################
+# Fit Elastic Net model (e.g., alpha = 0.5)
+############################################
+elastic_model <- glmnet(X_train, y_train, family = "binomial", alpha = 0.5)
+
+# Cross-validation to find the optimal lambda
+cv_elastic <- cv.glmnet(X_train, y_train, family = "binomial", alpha = 0.5)
+
+# Optimal lambda
+lambda_elastic <- cv_elastic$lambda.min
+
+# Refit the model with the optimal lambda
+elastic_model_opt <- glmnet(X_train, y_train, 
+                            family = "binomial", 
+                            alpha = 0.5, 
+                            lambda = lambda_elastic)
+
+
+```
+
+```{r}
+lasso.coef <- as.matrix(coef(lasso_model_opt))
+ridge.coef <- as.matrix(coef(ridge_model_opt))
+elastic.coef <- as.matrix(coef(elastic_model_opt))
+regularized.coef <- data.frame(lasso = lasso.coef[,1],
+                               ridge = ridge.coef[,1],
+                          elasticnet = elastic.coef[,1])
+pander(regularized.coef)
+
+```
+
+Following the 3 logistic model implementation, the above shows the estimated coefficients for each predictor under:
+
+Lasso (L1 penalty)
+Ridge (L2 penalty)
+Elastic Net (Combination)
+
+Lasso kept only 6 variables with non-zero coefficients, improving model simplicity. Ridge retained almost all variables but shrunk their effects. Elastic Net selected a balance of important predictors. 
+
+chroniccough was the strongest positive predictor across all models. Smokeint_vs_age was also an important variable for smoking behavior change. Health_vs_price
+was a negative predictor (likely those with stronger price sensitivity are less likely to quit). Age had a slight positive effect. While waek price_n_taxes hada consistent effect. 
+
+
+**Optimal Cut-off Probability Determination**
+
+In order use the fitted model for predicting the label or classification, we will determine the optimal cut-off probability instead of using the default cut-off probability of 0.5.
+
+## Optimal Cut0ff Probability Determination
+
+```{r optcut,  fig.cap="Logistic Optional Cuts", fig.align="center", fig.width=10, fig.height=8}
+#############################
+# Predict on the test set: type = "class" uses the default 
+# cut-off probability to be 0.5.
+predict_lasso <- predict(lasso_model_opt, newx = X_test, type = "response")
+predict_ridge <- predict(ridge_model_opt, newx = X_test, type = "response")
+predict_elastic <- predict(elastic_model_opt, newx = X_test, type = "response")
+
+###########################################
+## Optimal cutoff probability determination
+seq.cut <- seq(0,1, length=50)
+# y is a vector of 0 and 1
+acc.lasso <- NULL
+acc.ridge <- NULL
+acc.elastic <- NULL
+for (i in 1:length(seq.cut)){
+   predy.lasso <- ifelse(predict_lasso >seq.cut[i], 1, 0)
+   predy.ridge<- ifelse(predict_ridge >seq.cut[i], 1, 0)
+   predy.elastic<- ifelse(predict_elastic >seq.cut[i], 1, 0)
+   ##
+   acc.lasso[i] <- mean(y_test  == predy.lasso)
+   acc.ridge[i] <- mean(y_test == predy.ridge)
+   acc.elastic[i] <- mean(y_test  == predy.elastic)
+}
+## optimal cut-off: if the maximum accuracy occurs at multiple
+## cut-off probabilities, the average of these cutoff probabilities
+## will be defined as the optimal cutoff probability
+opt.cut.lasso <- mean(seq.cut[which(acc.lasso==max(acc.lasso))])
+opt.cut.ridge<- mean(seq.cut[which(acc.ridge==max(acc.ridge))])
+opt.cut.elastic <- mean(seq.cut[which(acc.elastic==max(acc.elastic))])
+##
+acc.data <- data.frame(prob = rep(seq.cut,3), 
+                       acc=c(acc.lasso, acc.ridge, acc.elastic), 
+                       group = c(rep("lasso",50), rep("ridge",50), rep("elastic",50)))
+
+
+opt.cut.lasso
+opt.cut.ridge
+opt.cut.elastic
+
+
+
+##
+gg.acc <- ggplot(data = acc.data, aes(x=prob, y = acc, color = group)) +
+  geom_line() +
+  annotate("text", x = 0.6, y = 0.45, 
+           label = paste("LASSO cutoff: ", round(opt.cut.lasso,5), "Accuracy: ", round(max(acc.lasso),5), 
+                         "\nRidge cutoff: ", round(opt.cut.ridge,5), "Accuracy: ", round(max(acc.ridge),5), 
+                         "\nElastic cutoff: ", round(opt.cut.elastic,5), "Accuracy: ", round(max(acc.elastic),5)), 
+           size = 3, 
+           color = "navy") +
+  ggtitle("Cut-off Probability vs Accuracy") +
+  labs(x = "cut-off Probability", 
+       y = "accuracy", color = "Group") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+##
+ggplotly(gg.acc)
+
+```
+
+From the three models, the best optimal cutoff for classifying participants as quitters and non quitters are as follows
+
+
+Lasso: Optimal Cut-Off = 0.5 -  This model performs best when using the default threshold of 0.5 to classify quitters vs. non-quitters.
+
+Ridge: Optimal Cut-Off = 0.418 -  This model does better when the cut-off is lowered to ~0.42, meaning it benefits from being more sensitive (predicting more 1s).
+
+Elasstic Net: Optimal Cut-Off = 0.5 -   - Like Lasso, it works best using the default 0.5 cut-off.
+
+In **Figure \@ref(fig:optcut)**, Lasso, Ridge, and Elastic Net all hit perfect accuracy (1.0) at some cut-off value. The flat accuracy curves for Lasso and Elastic Net suggest model stability across a range of thresholds. In contrast, Ridge required a lower threshold. These highlight the effectiveness of regularization for classification.
+
+
+
+**Other Performance Metrics**
+In this final step, we are evaluating the classification models using confusion matrices and standard performance metrics like accuracy, sensitivity, and specificity.
+
+```{r locperf}
+#######################################
+## using the optimal cutoff probability to predict labels
+## 
+pred.lab.lasso <- ifelse(predict_lasso >opt.cut.lasso, 1, 0)
+pred.lab.ridge<- ifelse(predict_ridge >opt.cut.ridge, 1, 0)
+pred.lab.elastic<- ifelse(predict_elastic >opt.cut.elastic, 1, 0)
+
+
+#################################
+# Convert predictions to factors
+pred.lab.lasso.fct <- as.factor(pred.lab.lasso)
+pred.lab.ridge.fct <- as.factor(pred.lab.ridge)
+pred.lab.elastic.fct <- as.factor(pred.lab.elastic)
+
+# Convert actual values to factors
+y_test <- as.factor(y_test)
+
+# Confusion Matrix and Metrics
+confusion.lasso <- confusionMatrix(pred.lab.lasso.fct, y_test)
+confusion.ridge<- confusionMatrix(pred.lab.ridge.fct, y_test)
+confusion.elastic <- confusionMatrix(pred.lab.elastic.fct, y_test)
+
+## Commonly used performance measured
+PerfMeasures <- cbind(lasso = confusion.lasso$byClass, 
+                     ridge = confusion.ridge$byClass, 
+                     elastic = confusion.elastic$byClass)
+pander(PerfMeasures)
+
+```
+
+The table of the performance matrice suggests strong separation between quitters and non-quitters based on the selected features. However, further validation is recommended to ensure generalization and rule out overfitting.
+
+
+# ROC Analysis
+
+To compare the performance of the three regularized logistic regression models (LASSO, Ridge, and Elastic Net) using ROC analysis, we can calculate the Area Under the Curve (AUC) and plot the ROC curves.
+
+
+
+```{r roc, fig.cap="Logistic Optional Cuts", fig.align="center", fig.width=10, fig.height=8}
+ library(pROC)
+# Predicted probabilities for each model: type = "response"
+prob_lasso <- predict(lasso_model_opt, newx = X_test, type = "response")
+prob_ridge <- predict(ridge_model_opt, newx = X_test, type = "response")
+prob_elastic <- predict(elastic_model_opt, newx = X_test, type = "response")
+
+# Compute ROC curves: roc object contains a lot information including
+# sensitivity, specificity, AUC, etc.
+roc_lasso <- roc(y_test, prob_lasso)
+roc_ridge <- roc(y_test, prob_ridge)
+roc_elastic <- roc(y_test, prob_elastic)
+
+# Compute AUC values
+auc_lasso <- auc(roc_lasso)
+auc_ridge <- auc(roc_ridge)
+auc_elastic <- auc(roc_elastic)
+
+## LASSO
+sen.lasso <- roc_lasso$sensitivities
+spe.lasso <- roc_lasso$specificities
+auc.lasso <- roc_lasso$auc
+
+## Ridge
+sen.ridge <- roc_ridge$sensitivities
+spe.ridge <- roc_ridge$specificities
+auc.ridge <- roc_ridge$auc
+
+## Elastic Net
+sen.elastic <- roc_elastic$sensitivities
+spe.elastic <- roc_elastic$specificities
+auc.elastic <- roc_elastic$auc
+
+## Plotting the ROC curves: three colors - green, orange, and purple
+
+plot(1-spe.lasso, sen.lasso, 
+     type = "l",
+     col = "green", 
+     xlim=c(0,1),
+     xlab = "1 - specificity",
+     ylab = "sensitivity",
+     main = "ROC Curves for LASSO, Ridge, and Elastic Net")
+lines(1-spe.ridge, sen.ridge, col = "orange")
+lines(1-spe.elastic, sen.elastic, col = "purple")
+abline(0,1,  lty = 2, col = "steelblue", lwd = 1)
+
+# Add legend
+legend("bottomright", legend = c(paste("LASSO (AUC =", round(auc_lasso, 3), ")"),
+                                paste("Ridge (AUC =", round(auc_ridge, 3), ")"),
+                                paste("Elastic Net (AUC =", round(auc_elastic, 3), ")")),
+       col = c("green", "orange", "purple"), lty = 1, cex = 0.8, bty = "n")
+
+
+
+#equationn from lasso log
+lasso_coefs <- coef(lasso_model_opt)
+coef_df <- as.data.frame(as.matrix(lasso_coefs))
+coef_df$variable <- rownames(coef_df)
+colnames(coef_df)[1] <- "coefficient"
+final_eq <- subset(coef_df, coefficient != 0)
+
+
+
+```
+
+From the ROC plot **Figure \@ref(fig:roc)**, the AUCs ranging from 0.6–0.7 is considered poor but better than chance. The accuracy metrics seems to suggest otherwise. Possibly, most people not quitting smoking created imbalance in the groups. 
+
+Lasso and Elastic Net models achieved AUC values of 0.61 and 0.60, respectively, while Ridge performed slightly lower at 0.58. These AUC values suggest the models may struggle to generalize when evaluated across a full range of probability thresholds. This made it evident the importance of using several metrics on classification models performance particularly in cases of class imbalance or overfitting.
+
+Based on perfect classification accuracy, and a slightly better AUC than Ridge, the Lasso model is a strong and final choice.
+     
+     
+$$
+\text{LASSO Logistic Regression Model equation: log [proba of Quitting smoking] / (1-proba of Quitting smoking)} = -2.19878025 + 0.02067265*\times \text{age} 
+$$ 
+$$
+ + 0.02052439\times \text{school} +0.19595968\times \text{chroniccough} + 0.00286423\times \text{price_n_taxes} - 0.10085143\times \text{health_vs_price}  + 0.13810545\times \text{smokeint_vs_age} 
+$$
+
+
+# Support Vector Machines (SVM)
+
+## SVM Classification
+
+To further explore classification performance, a Support Vector Machine (SVM) model was implemented. As a supervised learning algorithm, SVM is also effective for particularly for binary classification tasks, especially when the relationship between predictors and the outcome is nonlinear or complex. We will apply SVM with linear and RBF kernels and compare these with Regularized Logistic regression specifically Lasso Regularization. 
+
+```{r svmlogistic}
+
+## data (combined_data) for lasso logistic regression above to be used for consistency
+
+library(caret)
+# Split the data into training and testing sets
+index <- sample(1:nrow(combined_data), 0.8 * nrow(combined_data))
+train.data <- combined_data[index, ]
+test.data <- combined_data[-index, ]
+
+
+
+# Create preprocessing object based on training data predictors only
+preProc <- preProcess(train.data[, setdiff(names(train.data), "qsmkn")],
+                      method = c("center", "scale"))
+
+# Apply scaling to both training and test predictors
+train_scaled <- predict(preProc, train.data[, setdiff(names(train.data), "qsmkn")])
+test_scaled  <- predict(preProc, test.data[, setdiff(names(test.data), "qsmkn")])
+
+
+
+# Append the target variable
+train_scaled$qsmkn <- train.data$qsmkn
+test_scaled$qsmkn  <- test.data$qsmkn
+
+train_scaled$qsmkn <- as.factor(train_scaled$qsmkn)
+test_scaled$qsmkn  <- as.factor(test_scaled$qsmkn)
+
+
+## Set up custom cross-validation control
+tune_control <- tune.control(
+  cross = 5,  # Use 5-fold cross-validation, the default is 10-fold cross-validation
+  nrepeat = 1 # Number of repetitions (for repeated cross-validation)
+)
+## 
+## Perform a grid search for the best hyperparameters
+tune.RBF <- tune(
+  svm,          # using the primary svm() algorithm to tune parameter
+  qsmkn ~ ., # model formula
+  data = train_scaled,
+  kernel = "radial",    # You can change the kernel if needed
+  ranges = list(
+    cost = 10^(-1:2),   # tune the hyperparameter C in the loss function
+    gamma = c(0.1, 0.5, 1, 2)  # the hyper parameter in the RBF kernel
+  ),
+  tunecontrol = tune_control  # Use custom cross-validation settings
+)
+# Print the tuning results for inspection
+# print(tune_result)
+##
+## Extract the best model and hyperparameters
+best.RBF <- tune.RBF$best.model
+best.cost.RBF <- best.RBF$cost
+best.gamma.RBF <- best.RBF$gamma
+
+# Print the best hyperparameters onor inspection
+# cat("Best Cost:", best_cost, "\n")
+# cat("Best Gamma:", best_gamma, "\n")
+##
+## Train the final SVM model with the best hyperparameters
+final.RBF.class <- svm(
+  qsmkn ~ .,
+  data = train_scaled,
+  kernel = "radial",
+  cost = best.cost.RBF,
+  gamma = best.gamma.RBF
+)
+
+# Print the final model - for inspection
+# print(final_model)
+##
+## Make predictions on the test set: type = "class"
+pred.RBF.class <- predict(final.RBF.class, test_scaled, type = "class")
+
+
+
+# Evaluate the predictions (e.g., using a confusion matrix)-Using default cutoff 0.5
+confusion.matrix.RBF <- table(Predicted = pred.RBF.class, Actual = test_scaled$qsmkn)
+#print(confusion.matrix.RBF)
+
+# Calculate accuracy
+accuracy <- sum(diag(confusion.matrix.RBF)) / sum(confusion.matrix.RBF)
+cat("\n\n RBF Accuracy at best model and hyperparameters:", accuracy, "\n")
+
+```
+
+A Support Vector Machine (SVM) with a radial basis function (RBF) kernel was trained on the dataset after applying standard preprocessing and hyperparameter tuning through 5-fold cross-validation. The model achieved an accuracy of 88.96% on the held-out test set using the default cutoff probability of 0.5.
+
+To identify the optimal parameter settings, a grid search combined with cross-validation was employed. This tuning process aimed to find the combination of cost and kernel parameters that maximizes model accuracy while minimizing generalization error.The best model, with the best cost = 10 and best gamma = 0.1, was then refit on the training set and evaluated on the test set. The model achieved an accuracy of 88.96%, demonstrating effective classification performance.
+
+
+```{r}
+#Predict Probabilities on the Test Set
+final.RBF.class <- svm(
+  qsmkn ~ .,
+  data = train_scaled,
+  kernel = "radial",
+  cost = best.cost.RBF,
+  gamma = best.gamma.RBF,
+  probability = TRUE
+)
+pred.RBF.prob <- predict(final.RBF.class, test_scaled, probability = TRUE)
+pred.RBF.prob <- predict(final.RBF.class, test_scaled, probability = TRUE)
+pred.prob.values <- attr(pred.RBF.prob, "probabilities")[, "1"]  # probability of class "1"
+# Make sure the true labels are numeric or factors with two levels
+library(pROC)
+roc_obj <- roc(response = test_scaled$qsmkn, predictor = pred.prob.values)
+# Plot
+plot(roc_obj, col = "darkblue", lwd = 2, main = "SVM ROC Curve (RBF Kernel)")
+abline(a = 0, b = 1, lty = 2, col = "gray")  # random guess line
+# Add AUC to the plot
+auc_val <- auc(roc_obj)
+legend("bottomright", legend = paste("AUC =", round(auc_val, 3)), col = "darkblue", lwd = 2)
+
+
+#get accurary at 0.5
+pred.labels <- ifelse(pred.prob.values > 0.5, 1, 0)
+true.labels <- as.numeric(as.character(test_scaled$qsmkn))
+accuracy_0.5 <- mean(pred.labels == true.labels)
+cat("Accuracy at 0.5 cutoff:", round(accuracy_0.5, 4), "\n")
+
+
+
+```
+
+The ROC curve for the SVM model with an RBF kernel demonstrates good classification with an area under the curve (AUC) of 0.988. It indicates the model is highly effective at discriminating between individuals who did and did not experience the outcome of quitting smoking. The curve's proximity to the top-left corner confirms both high sensitivity and specificity across various probability thresholds.
+
+The accuracy(92.33%) and AUC(0.988) were based on cutoff point of 0.5 for classification. To obtain the optimal cutoff point, we will now implement finding the optimal cutoff based on the predicted probabilities.
+
+```{r, svmoptmalcut}
+
+# get optimal cutoff
+# Get predicted probabilities
+prob_rbf <- attr(predict(final.RBF.class, test_scaled, probability = TRUE), "probabilities")[, "1"]
+
+# Create cutoff range: for optimal cutoff
+seq.cut <- seq(0, 1, length = 50)
+acc.rbf <- numeric(length(seq.cut))  # Pre-allocate vector
+
+# True labels
+y_test <- as.numeric(as.character(test_scaled$qsmkn))  # Ensure numeric
+
+# Loop to find accuracy at each cutoff
+for (i in seq_along(seq.cut)) {
+  predy.rbf <- ifelse(prob_rbf > seq.cut[i], 1, 0)
+  acc.rbf[i] <- mean(y_test == predy.rbf)
+}
+
+# Find optimal cutoff
+opt.cut.rbf <- mean(seq.cut[which(acc.rbf == max(acc.rbf))])
+cat("Optimal Cutoff (based on max accuracy):", opt.cut.rbf, "\n")
+# Accuracy-based optimal cutoff
+cutoff_acc <- opt.cut.rbf  # from your loop
+
+final_pred <- ifelse(prob_rbf > cutoff_acc, 1, 0)
+
+accuracy_at_opt_cutoff <- mean(final_pred == y_test)
+cat("Accuracy at optimal cutoff:", round(accuracy_at_opt_cutoff, 4), "\n")
+
+
+roc_obj_opt <- roc(response = test_scaled$qsmkn, predictor = prob_rbf)
+auc_val <- auc(roc_obj_opt)
+cat("AUC of RBF at optimal cutoff:", round(auc_val, 3), "\n")
+
+```
+Using the optimal cutoff search to identify the most effective decision threshold for classification, a series of cutoff probabilities ranging from 0 to 1 were evaluated using the predicted probabilities from the SVM model with an RBF kernel. The optimal cutoff probability was found to be approximately 0.306, which yielded a maximum accuracy of 95.71% on the test data. 
+
+The classification model's performance was evaluated using two different probability thresholds: the default cutoff of 0.50 and a data-driven optimal cutoff of 0.63, which was selected based on maximum accuracy.At the default 0.50 cutoff, the model achieved an accuracy of 88.96% with an excellent AUC of 0.988, indicating strong overall discriminative ability.
+
+However, when using the optimal cutoff of 0.63, the model's accuracy significantly improved to 98.89%. This demonstrates adjusting the classification threshold had a substantial impact on the model's practical classification performance.
+
+
+
+
+```{r}
+acc.data <- data.frame(
+  prob = rep(seq.cut, 2), 
+  acc = c(acc.rbf,acc.lasso), 
+  group = c(rep("RBF Logistic", length(seq.cut)), rep("LASSO", length(seq.cut)))
+)
+
+##
+gg.acc2 <- ggplot(data = acc.data, aes(x=prob, y = acc, color = group)) +
+  geom_line() +
+  annotate("text", x = 0.6, y = 0.45, 
+           label = paste("nRBF optimal cutoff: ", round(opt.cut.rbf,5), "Accuracy: ", round(max(accuracy_at_opt_cutoff),5), 
+                         "\nLASSO optimal cutoff: ", round(opt.cut.lasso,5), "Accuracy: ", round(max(acc.lasso),5)
+                         ), 
+           size = 3, 
+           color = "navy") +
+  ggtitle("Cut-off Probability vs Accuracy") +
+  labs(x = "cut-off Probability", 
+       y = "accuracy", color = "Group") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+##
+ggplotly(gg.acc2)
+
+
+
+```
+
+
+
+## SVM vs LASSO comparison
+
+In this SVM session, we have looked at RBFL machine learning approaches at traditional cut off and optimal tuning and compared to LASSO logistic regression.
+
+To evaluate the effectiveness of these classification approaches, both LASSO logistic regression and SVM with a radial basis function (RBF) kernel were applied to the NHEFS dataset. LASSO regression, using regularization to select informative features, achieved a test accuracy of approximately 74.2% at the optimal 0.50 cutoff and AUC of 0.74.
+
+For the RBF SVM model, a series of cutoff probabilities from 0 to 1 were explored to identify the most effective decision threshold. While the model initially achieved 88.96% accuracy at the default 0.50 threshold (matching LASSO's performance), accuracy significantly improved to 98.89% when using a data-driven optimal cutoff of 0.63. This substantial gain highlights the importance of tuning classification thresholds, particularly for non-linear models like SVM, where probability distributions may not be as sharply centered around 0.5.In summary, although both models demonstrated strong predictive capability, the RBF SVM model benefited more from cutoff tuning. This suggests that while LASSO offers interpretable and regularized modeling, SVM with optimized thresholds can provide superior classification performance in terms of accuracy.
+
+# Discussion 
+In this study, we have applied several machine learning Regularization and SVM methods using our NHEFs data. We applied wse of cross-validation and tuning of hyperparameters to reduce overfitting and improve generalizability. Regularized models like LASSO and Elastic Net showed how shrinkage techniques can help control complexity in high-dimensional data. We explore feature enginerring line income quartiles, grouped marital status, PCA and Box-Cox transformation to improve our models predictive performance. One of the most impactful findings was how adjusting the classification threshold improved accuracy from 88.96% to 98.89% for the SVM model. We have used accuray and other metrics and AUT to provide information into our model discrimination.
+Our results suggest that combining traditional statistical approaches with modern machine learning techniques — combined with careful tuning and evaluation — provides a powerful framework for prediction in public health research.
+
+# Limitations
+Our current workd did not compare linear models in both Regularization methods or the SVM approaches. Our primary comparisons were based on Logistic regression to compare the different methods while employing seveal metrics. Future work on SVM and regularized linear regression would help compare different appraoches in the ML space and how each of these are unique and useful for predictive purpose.
+
+
+
+
+
+

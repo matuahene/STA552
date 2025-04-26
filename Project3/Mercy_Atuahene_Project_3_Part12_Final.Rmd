@@ -1,0 +1,1499 @@
+---
+title: "Effective Campaigns in Bank Marketing"
+subtitle: "Identification of Factors Influencing Term Bank Deposit Decisions"
+author: "Author: Mercy Atuahene" 
+date: "Date: April 16, 2025"
+affiliation: "West Chester University of Pennsylvania, Department of Statistics"
+output: 
+  bookdown::html_document2:
+  #html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+    lot: true  # Include list of tables
+
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: no
+    fig_width: 3
+    fig_height: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{=html}
+
+<style type="text/css">
+
+/* Cascading Style Sheets (CSS) is a stylesheet language used to describe the presentation of a document written in HTML or XML. it is a simple mechanism for adding style (e.g., fonts, colors, spacing) to Web documents. */
+
+h1.title {  /* Title - font specifications of the report title */
+  font-size: 20px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+h3.subtitle {  
+    font-size: 18px;  
+    font-weight: bold;  
+    color: darkred;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+h4.author { /* Header 4 - font specifications for authors  */
+  font-size: 16px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+h4.date { /* Header 4 - font specifications for the date  */
+  font-size: 16px;
+  font-family: system-ui;
+  color: DarkBlue;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+div.affiliation {  
+    font-size: 14px;  
+    font-style: italic;  
+    color: DarkSlateGray;  
+    text-align: center;  
+    font-family: "Gill Sans", sans-serif;  
+}
+
+
+h1 { /* Header 1 - font specifications for level 1 section title  */
+    font-size: 18px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h2 { /* Header 2 - font specifications for level 2 section title */
+    font-size: 16px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+    font-weight: bold;
+}
+
+
+h3 { /* Header 3 - font specifications of level 3 section title  */
+    font-size: 14px;
+    font-family: "Gill Sans", sans-serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - font specifications of level 4 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+h5 { /* Header 5 - font specifications of level 5 section title  */
+    font-size: 12px;
+    font-family: "Gill Sans", sans-serif;
+    color: darkred;
+    text-align: left;
+}
+
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+</style>
+```
+
+```{r setup, include=FALSE}
+
+# code chunk specifies whether the R code, warnings, and output 
+# will be included in the output files.
+if (!require("knitr")) {
+   install.packages("knitr")
+   library(knitr)
+}
+if (!require("tidyverse")) {
+   install.packages("tidyverse")
+library(tidyverse)
+}
+if (!require("GGally")) {
+   install.packages("GGally")
+library(GGally)
+}
+
+if (!require("caret")) {
+   install.packages("caret")
+library(caret)
+}
+if (!require("pander")) {
+   install.packages("pander")
+library(pander)
+}
+if (!require("randomForest")) {
+   install.packages("randomForest")
+library(randomForest)
+}
+if (!require("rpart")) {
+   install.packages("rpart")
+library(rpart)
+}
+if (!require("rpart.plot")) {
+   install.packages("rpart.plot")
+library(rpart.plot)
+}
+if (!require("pROC")) {
+   install.packages("pROC")
+library(pROC)
+}
+
+
+knitr::opts_chunk$set(echo = TRUE,   # include code chunk in the output file
+                      warning = FALSE,# sometimes, you code may produce warning messages,
+                                      # you can choose to include the warning messages in
+                                      # the output file. 
+                      results = TRUE, # you can also decide whether to include the output
+                                      # in the output file.
+                      message = FALSE,
+                      comment = NA
+                      )  
+
+library(summarytools)
+library(e1071)
+library(ggplot2)
+library(reshape2)
+library(plotly)
+library(tableone)
+library(bookdown)
+library(gridExtra)
+library(grid)
+library(table1)
+library(knitr)
+library(Hmisc)   
+library(VIM) 
+library(broom)
+library(stargazer)
+library(tidyverse)
+library(mice)
+library(bookdown)
+library(MASS)
+library("readxl")
+library(dplyr)
+
+```
+
+
+
+\
+
+# Abstract
+This analysis explores key factors influencing clients' decisions to subscribe to a term deposit, using a real-world bank marketing dataset from a Portuguese financial institution. The dataset includes customer demographics, past contact history, and outcomes from previous marketing campaigns. The analysis also explores the effectiveness of classification models in prediction of customer subscription to term deposits. We utilized classification models and ensemble techniques to identify effective approach to marketing strategies. A series of exploratory data visualizations were used to identify patterns and relationships across variables such as job type, contact method, campaign timing, and prior campaign outcomes.
+Initial analyses using logistic regression and CART (Classification and Regression Trees) provided base insights with logistic regression achieving AUC = 0.6973, while CART models underperformed with an AUC ≈ 0.57. To improve performance, Bagging and Random Forest were implemented and tuned using grid search and cross-validation. Random Forest performed better with the highest AUC = 0.7026, possibly based on its strength in handling nonlinear relationships.
+
+We further optimized classification cutoffs using cost-sensitive analysis and Youden’s index, accounting for the financial implications of misclassification. The results indicate that use of ensemble methods in predictive modeling of customer behavior is better than other classification meodels..
+
+
+```{r}
+#install.packages("readxl") # install package if required
+#library(readr)
+bank_orig <- read_delim("https://matuahene.github.io/STA552/Project3/bank.csv", delim = ";", quote = "\"")
+
+
+#table (bank_orig$y)
+
+#names(bank_orig) #smaller groups exist - student/unemployed/housemaid/enterpreneur
+
+#table(bank_orig$marital) #divorced smaller
+# table(bank_orig$education) #unknwon too small
+# table(bank_orig$default) #less defaults
+# 
+# table(bank_orig$housing)
+# table(bank_orig$loan) #loan smaller
+# table(bank_orig$contact) #telephone smaller
+# 
+# table(bank_orig$month)
+# table(bank_orig$campaign) #more people called at least 5X and quite few more than 14 times
+# table(bank_orig$previous) #more not contact at least 1
+# table(bank_orig$poutcome) #few sucess at a periouvs campgian
+# table(bank_orig$y) #ffew succeess
+
+
+#summary(bank_orig)
+#describe(bank_orig)
+
+#Function to Convert Variables to Factors with Labels
+convert_to_factor <- function(df, var_labels) {
+  for (var in names(var_labels)) {
+    if (var %in% colnames(df)) {
+      
+      # Check if the variable has labels (list format) or is just a vector
+      if (is.list(var_labels[[var]])) {
+        labels <- var_labels[[var]]$labels   # Extract labels
+        missing_values <- var_labels[[var]]$missing  # Extract missing values (if any)
+        
+        # Replace specified values with NA
+        if (!is.null(missing_values)) {
+          df[[var]][df[[var]] %in% missing_values] <- NA
+        }
+      } else {
+        labels <- var_labels[[var]]  # Just a vector of labels
+        missing_values <- NULL  # No missing values
+      }
+      
+      # Convert to factor with labels (if labels exist)
+      if (!is.null(labels)) {
+        df[[var]] <- factor(df[[var]], labels = labels)
+      } else {
+        df[[var]] <- factor(df[[var]])  # Convert to factor without labels
+      }
+      
+    } else {
+      warning(paste("Variable", var, "not found in dataset"))
+    }
+  }
+  return(df)
+}
+
+var_labels <- list(
+  marital = c("divorced",  "married", "single "),
+  education = c("primary", "secondary",  "tertiary", "unknown"),
+  default = c("no", "yes"),
+  housing = c("no", "yes"),
+  loan = c("no", "yes"),
+  contact = c("cellular", "telephone", "unknown"),
+
+  month = c( "apr", "aug", "dec", "feb", "jan", "jul", "jun", "mar", "may", "nov", "oct", "sep"),
+  pcoutcome = c("failure",   "other",  "success",  "unknown"),
+  y = c("no", "yes")
+ 
+  )
+
+
+# Named list of labels
+labels_list <- list(job = "Job",
+                    marital = "Marital Status",  
+                    education = "Education",  
+                    age = "Age (years)", 
+                    defualt = "Defaulted?",
+                   balance = "Average Yearly balance",
+                   housing = "Mortgage",
+                   loan = "Personal Loan?",
+                   contact = "Communication Type",
+                   day = "Last contact day of the month",
+                   month = "Last contact month of year",
+                   duration = "Last contact duration, in seconds",
+                   campaign = "Number of contacts in campaign",
+                   pdays = "Number of days passed since las contact",
+                   previous = 'Number of previoous marketing campaign',
+                   poutcome = 'Outcome of the previous marketing campaign',
+                   y = 'Term Deposit Subscription'
+)
+                   
+#Assign labels from above to variables
+bank_updt <- convert_to_factor(bank_orig, var_labels)
+
+
+# Assign Labels to Variables Using table1::label()
+
+library(table1)
+for (var in names(labels_list)) {
+  if (var %in% names(bank_updt)) {
+    label(bank_updt[[var]]) <- labels_list[[var]]
+  } else {
+    warning(paste("Variable", var, "not found in dataset"))
+  }
+}
+
+
+#put month in order
+bank_updt$month <- factor(bank_updt$month, 
+                          levels = c("jan", "feb", "mar", "apr", "may", "jun", 
+                                     "jul", "aug", "sep", "oct", "nov", "dec"),
+                          ordered = TRUE)
+
+library(dplyr)
+
+bank_updt <- bank_updt %>%
+  mutate(season = case_when(
+    month %in% c("mar", "apr", "may") ~ "Spring",
+    month %in% c("jun", "jul", "aug") ~ "Summer",
+    month %in% c("sep", "oct", "nov") ~ "Fall",
+    month %in% c("dec", "jan", "feb") ~ "Winter",
+    TRUE ~ NA_character_
+  ))
+
+bank_updt$season <- factor(bank_updt$season, 
+                           levels = c("Winter", "Spring", "Summer", "Fall"))
+
+
+
+
+```
+
+
+# Introduction
+
+Mass campaigns or direct marketing targeting consumers are widely known to have a low response rate (Ling and Li, 1998). Banks and other financial institutions seek ways to improve their response rate in marketing their products to consumers. Targetted or Directed marketing is one of the efficient ways to marget products due to its efficiency property (Ou et al. 2003) irrespective of some of its negative impacts.To encourage asset building banks may use direct or target approaches to attrach individuals likely interested in a bank product that promises interests over time. However targetted or direct campaigns are laboriuous and not efficient if multiple contacts has to be made for a product to be sold. This opens up the question of how to implement measures that are efficient and still gets the product to clients in the banking industry in a way that minimizes resources utilization and still gets the product across.  Specifically, can we use bank customer information to predict who is likely to purchase a campaign product after initiation of direct contact?
+
+With this background, we will use data from a Portuguese Bank created by _"Paulo Cortez (Univ. Minho) and Sérgio Moro (ISCTE-IUL) @ 2012. The data is related with direct marketing campaigns of a Portuguese banking institution. The marketing campaigns were based on phone calls. Often, more than one contact to the same client was required, in order to access if the product (bank term deposit) would be (or not) subscribed"_. This data can be located at 
+<a href="https://archive.ics.uci.edu/dataset/222/bank+marketing" target="_blank"> (Bank Marketing) </a>. 
+
+
+Our aim is to use classification and regression tree (CART), ensemble: Bagging and Random Forest (RF) approaches to build algorithms that helps predict bank customers who would subscribe to the campaign product (a term deposit). We would use respondents data such as age, average yearly balance, contact duration, marital status, etc, to discriminate respondents likelihood to subscribe to the term deposit product. We would also use regression tree approach to determine variables that impact average yearly balance at the bank based on participants factors when possible considering time restraints for the project. 
+
+We will first use classification Trees (of the CART methods) to predict customers subscribing to the campaign product (term deposit) or not. We will also use Regression Trees to predict the amount of yearly balance (euros) in a customer's account using respondents characteristics. Additional models will utilize the ebsemble techniques Bagging and RF. The model performance of these approaches will be conpared using appropriate perfomance measures like AUC and accuracy when applicable. 
+
+# Data Overview
+
+## Description of Data
+The bank client dataset is a marketing campaign data from a Portuguese institution. The campaigns were based on phone calls to contact clients and find out if they would be interested or not to a term deposit subscription (Target feature variable). The data (bank.csv) is a sample of 45211 records with 16 feature variables and target variable (y). There are no missing data and as a result, there will be no imputation methods employed in any of the analysis.   
+
+## Feature and Target Variables
+
+ * **Target variable:**
+  + y : Subscription to Term deposit. Client subscribed a term deposit? (binary: "yes","no")
+ 
+* **Independent feature variables**
+
+ + age (numeric) in years
+ + job : type of job (categorical: "admin.","unknown","unemployed","management","housemaid","entrepreneur","student", "blue-collar","self-employed","retired","technician","services") 
+ + marital : marital status (categorical: "married","divorced","single"; note: "divorced" means divorced or widowed)
+ + education (categorical: "unknown","secondary","primary","tertiary")
+ + default: has credit in default? (binary: "yes","no")
+ + balance: average yearly balance, in euros (numeric) 
+ + housing: has housing loan? (binary: "yes","no")
+ + loan: has personal loan? (binary: "yes","no")
+ + contact: contact communication type (categorical: "unknown","telephone","cellular") 
+ + day: last contact day of the month (numeric)
+ + month: last contact month of year (categorical: "jan", "feb", "mar", ..., "nov", "dec")
+ + duration: last contact duration, in seconds (numeric)
+ + campaign: number of contacts performed during this campaign and for this client (numeric, includes last contact)
+ + pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric, -1 means client was not previously contacted)
+ + previous: number of contacts performed before this campaign and for this client (numeric)
+ + poutcome: outcome of the previous marketing campaign (categorical: "unknown","other","failure","success")
+
+\
+
+## Descriptive Statistics/Graphs/Fetaure engineering
+We provide descriptive statistics in addition to explorative data analysis of the bank client data next.We begin with an overall Table of feature variables by Termd Deposit Subscription status.
+
+
+
+```{r tab:overalltab1, results='asis'}
+library(table1)
+library(gt)
+
+
+bank_demo<-table1(
+  ~ age + job + marital + education + default + balance + housing + loan + 
+    contact + day + month + duration + campaign + pdays + previous + poutcome | y,
+  data = bank_updt,
+  caption = "Table 1: Descriptive Statistics Stratified by Client Term Deposit Subscription",
+  footnote = "Data source: Portuguese Client Bank Dataset",
+  topclass = "Rtable1-modern"
+
+)
+bank_demo
+#table(bank_updt$month)
+```
+
+```{r overtab, results='hide'}
+kable(bank_demo, caption = "Table 1:  Descriptive Statistics Stratified by Client Subscription")
+```
+
+
+In Table 1, we notice client demographics vary by subscription status. Balance (average yearly in euros) is higher among those subscribed to a term depost compared to those who did not. The median value was also less than the mean indicating a right skewed data.There were extreme negative and positive balance. In the previous campaigns(poutcome), there were more people who subscribed(15.9%)  than those who did not (1.2%) sign up thoughly only 2.9% overall success rate was achieved. In previous campaigns (previous), more people on average were contacted from those who signed up for the current campaign than those who did not. Age was also positively skewed but since CART does not require features to be transformed or normalized, we will only bin variables with extremes. We will instead bin age into balanced into equal bins to improve interpretability, reduce over fitting to extreme values and improve performance of the non-CART models for comparison. The log or other transformations like Box-Cox or Yue-Johnson will be used as necessary when comparing with other models like logistic regression where feature transformation is necessary. The number of days since last contact was aldo engineered by binning the values into quadrilles to avoid overfitting.
+
+
+```{r, eda.feature, results='hide'}
+
+# library(bestNormalize)
+# yj_age <- yeojohnson(bank_orig$age)
+# bank_orig$logage<- log(bank_orig$age)
+# bank_orig$age_yj <- yj_age$x.t
+# hist(bank_orig$age_yj, main = "Yeo-Johnson Transformed Age")
+# hist(bank_orig$age, main = "original Age")
+# hist(bank_orig$logage, main = "log Age")
+
+#library(moments)
+#check skewness after trrasnformations
+#skewness(bank_orig$age, na.rm = TRUE)
+#skewness(bank_orig$logage, na.rm = TRUE)
+#skewness(bank_orig$age_yj)
+
+```
+
+```{r eda, fig.cap="Log and Yeo-Johnson Transformations", fig.align="center", fig.width=8, fig.height=6}
+
+
+#library(haven)
+#library(skimr)
+# Remove value labels (but retain variable labels used by table1)
+#bank_updt_clean <- bank_updt %>%
+#mutate(across(where(~ inherits(.x, "labelled")), haven::zap_labels))
+
+
+#balance conversion via log
+bank_updt$log_balance <- log1p(bank_updt$balance)
+
+#summary(bank_updt$balance)
+#summary(bank_updt$log_balance)
+
+# Load library trasnformation
+library(bestNormalize)
+
+# 1. Apply Yeo-Johnson transformation
+yj_balance <- yeojohnson(bank_updt$balance)
+
+# 2. Store the transformed values
+bank_updt$balance_yj <- yj_balance$x.t
+
+# 3. Print lambda (optional)
+#print(yj_balance$lambda)
+
+# 4. Plot original vs transformed histograms with colors
+par(mfrow = c(1, 2))  # side-by-side plots
+
+# Original Balance Plot
+hist(bank_updt$balance,
+     breaks = 30,
+     col = "lightblue",
+     border = "white",
+     main = "Original Balance",
+     xlab = "Balance")
+
+# Transformed Balance Plot
+hist(bank_updt$balance_yj,
+     breaks = 30,
+     col = "#404080",
+     border = "white",
+     main = "Yeo-Johnson Balance",
+     xlab = "Transformed Balance")
+
+
+#Quartile of age
+bank_updt$age_quantile <- cut(
+  bank_updt$age,
+  breaks = quantile(bank_updt$age, probs = seq(0, 1, 0.25), na.rm = TRUE),
+  include.lowest = TRUE,
+  labels = c("Q1", "Q2", "Q3", "Q4")
+)
+
+#Quartile of balance
+bank_updt$balance_quantile <- cut(
+  bank_updt$balance,
+  breaks = quantile(bank_updt$balance, probs = seq(0, 1, 0.25), na.rm = TRUE),
+  include.lowest = TRUE,
+  labels = c("Q1", "Q2", "Q3", "Q4")
+)
+
+#table(bank_updt$age_quantile)
+#table(bank_updt$balance_quantile)
+
+#number of days since previous contact quartiles
+bank_updt <- bank_updt %>%
+  mutate(pdays_quantile = ntile(pdays, 4))  # 4 = quartiles
+
+```
+
+In **Figure \@ref(fig:eda)**, we show log and Yeo-Johnson transformation of the balance variable. The Yeo-Jonson better transformed the balance variable at the lambda value from the Yeo-Johnson transformation of `r round(yj_balance$lambda, 3)`. and will be used in the Logistic regression model for model comparison. In the CART classification, we will use the original variables where there is a need for log transformation.
+
+Next, we show additional graphical distributions of the relations existing among the features for further exploratory analysis.The density plots showed other features that were skewed. 
+
+```{r density, fig.cap="Density Plots of Numeric Variables by Subscription Status", fig.align="center", fig.width=10, fig.height=10}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+#numeric variables density plots
+# Prepare the data in long format
+num_vars <- bank_orig %>%
+  dplyr::select(y, age, balance, duration, campaign, pdays, day) %>%
+  pivot_longer(cols = -y, names_to = "variable", values_to = "value")
+
+# Create faceted density plot
+ggplot(num_vars, aes(x = value, fill = y)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("yes" = "#1f77b4", "no" = "lightpink")) +
+  facet_wrap(~variable, scales = "free", ncol = 2) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Density Plots of Numeric Variables by Subscription Status",
+    x = "Value",
+    y = "Density",
+    fill = "Subscribed"
+  ) +
+  theme(
+    strip.text = element_text(face = "bold", color = "blue"),
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
+
+```
+
+The density plots (in **Figure \@ref(fig:density)**) of numeric variables, most people in the bank data were less than 50 years and older people (>35 years) were more likely to subscribe while younger people were more likely not to subscribe.  Yearly balance(euros) is right skewed for both subscribers and non-subscribers and subscribers were more likley to have larger balance and could be likely be a strong predictor. This is transformed because of the skewness in **Figure \@ref(fig:eda)** for comparison with modeling in logistic regression.   The number of contacts performed during this campaign and for clients were right skewed with subscribers contacted less number of times.It also implies more contacts does not imply more likely to subscribe. In the day of month contacted, non-subscribers peak around the 5th and 20th of the month and the bank can take strategic decisions around this. Subscribers had longer duration of calls compared with non subscribers likely due to longer engagement but this variable information is not goint to be available at the time of prediction and will not be included in our prediction methods. Lower values or recent contacts are more common among subscribers, larger values were probably people who were never contacted. This variable will be binned for non CART regression as already indicated.
+
+
+\
+
+
+```{r catplots, fig.cap="Categorical Feature Plots by Subscription Status", fig.align="left", fig.width=10, fig.height=8}
+
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(gridExtra)
+
+# Your categorical variables
+cat_vars <- c("job", "contact", "month", "poutcome")
+
+# Initialize plot list
+cat_plots <- list()
+
+# Loop through each categorical variable
+for (var in cat_vars) {
+  
+  # Step 1: Calculate proportions for this variable
+  prop_df <- bank_updt %>%
+    count(.data[[var]], y, name = "n") %>%
+    group_by(.data[[var]]) %>%
+    mutate(prop = n / sum(n)) %>%
+    ungroup()
+  
+  # Optional: Rename the variable to "Category" so ggplot can use it
+  prop_df <- prop_df %>% rename(Category = !!sym(var))
+  
+  # Step 2: Create plot
+  p <- ggplot(prop_df, aes(x = fct_rev(Category), y = prop, fill = y)) +
+    geom_bar(stat = "identity", position = "stack", color = "white") +
+    geom_text(
+      aes(label = scales::percent(prop, accuracy = 1)),
+      position = position_stack(vjust = 0.5),
+      color = "white",
+      size = 3.5
+    ) +
+    scale_y_continuous(labels = scales::percent) +
+    scale_fill_manual(values = c("no" = "lightpink", "yes" = "#1f77b4")) +
+    coord_flip() +
+    theme_minimal(base_size = 13) +
+    labs(
+      title = paste("Proportion of Term Deposit\nby Subscription", tools::toTitleCase(var)),
+      x = tools::toTitleCase(var),
+      y = "Proportion",
+      fill = "Subscribed"
+    ) +
+    theme(
+      plot.title = element_text(face = "bold", hjust = 0.5),
+      legend.position = "bottom"
+    )
+  
+  # Save to list
+  cat_plots[[var]] <- p
+}
+
+# Show all plots (adjust ncol/nrow as needed)
+grid.arrange(grobs = cat_plots, ncol = 2, top = "Subscription Rate by Categorical Variables")
+
+
+```
+
+From the above plots in **Figure \@ref(fig:catplots)**, we notice that most jobs have low subscription rates and higher subscription rates are observed in the following jobs or roles: students(23%), retirees(23%) and admin(12%) compared to blue-color jobs or service occupations. Cellular contacts had the highest subscription rates. March (43%), October(46%), and December(45%) saw highest subscription rates than May(7%) or Jun(10%) with much lower subscription success. Prior success appears to be highly predictive: 64% of clients with a previous successful outcome subscribed again, compared to only 13% or less for those with failure or unknown outcomes.
+
+\
+
+
+```{r othercat, fig.cap="Additional Feature Plots by Subscription Status", fig.align="left", fig.width=8, fig.height=6}
+
+education<-ggplot(bank_updt, aes(x = education, y = balance, fill = y)) +
+  stat_summary(fun = "mean", geom = "col", position = "dodge", color = "black") +
+  scale_fill_manual(values = c("yes" = "#1f77b4", "no" = "lightpink")) +  # Custom fill colors
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Average Balance by \n Education and Subscription",
+    x = "Education Level",
+    y = "Average Balance (€)",
+    fill = "Subscribed"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 20, hjust = 1)
+  )
+
+
+library(dplyr)
+library(dplyr)
+library(ggplot2)
+
+Mean_bal <- bank_updt %>%
+  group_by(poutcome, y) %>%
+  summarise(mean_balance = mean(balance, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = poutcome, y = mean_balance, group = y, color = y)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("yes" = "#1f77b4", "no" = "lightpink")) +  # custom colors
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Mean Balance by Previous \nOutcome and Subscription",
+    x = "Previous Outcome",
+    y = "Average Balance (€)",
+    color = "Subscribed"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5)
+  )
+
+
+
+
+season2<-ggplot(bank_updt, aes(x = season, y = balance, fill = season)) +
+  stat_summary(fun = "mean", geom = "col", color = "black") +
+  #scale_fill_brewer(palette = "Set2")
+  scale_fill_manual(values = c(
+  "Winter" = "#aec7e8",   # blue
+  "Spring" = "#98df8a",   # green
+  "Summer" = "#ffbb78",   # orange
+  "Fall"   = "#d2b48c"    # brown
+))+
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Average Balance \n by Season of Contact",
+    x = "Season",
+    y = "Average Balance (€)"
+  ) +
+  theme(legend.position = "none")
+
+
+grid.arrange(education, Mean_bal,season2, ncol=2)
+```
+
+From the above plots in **Figure \@ref(fig:othercat)**, we observe that across all education levels, clients who subscribed to a term deposit had higher average balances than those who did not.The gap was large for clients with unknown and tertiary education which may indicate that financial status may correlate with likelihood to subscribe.
+And those with prior campaign success contact had significantly higher balances, particularly among those who did not subscribe in the current campaign. This may suggest that some high-balance clients were already targeted previously or require a different strategic to engage them.The Fall season stands out with the highest average balances, exceeding Winter, Spring, and Summer. This seasonal effect signal optimal periods for marketing efforts based on clients’ financial standing at the time of contact.
+
+\
+
+# Methodology
+
+## Methodological Comparisons
+
+With respect to our aim of identifying factors that influence subscription to term deposits, we summarize and evaluate alternative methods beyond the CART model that could contribute to our analysis. We discuss the Logistic regression, Support Vectoer Machines and ensemble methods and our method of CART regression. 
+
++ **Logistic Regression: Logistic regression** models the probability that a customer will subscribe to a term deposit based on on our feature variables and generates coefficients and probability of subscribing to term deposits. Since logistic regression assumes linearity between features and log-odd of the target, it is not good for complex and non-linear relationships. Feature engineering is often needed to improve the model fit.
+
+
++ **Classification (Decision) and Regression Tress (CART)**: CART models on the otherhand, provides a transparent way to classify customers into "yes" or "no" subscription groups by splitting the data based on important features.They handle both categorical and continuous variables effectively and are well suited for detecting non-linear relations. The CART models may however, over fit when there is data imbalance unless there is there is pre or post-pruning to its complexity.
+
+
++ **Support Vector Machines (SVM)**: Support Vector Machines aim to find the best boundary or hyperplane that separates the target into classes from low to high-dimensional space using kernel functions to allow for complex patterns in the data to be modeled. It is known to work well with high dimensional data and also for non-linear boundaries and are robust against over-fitting. However, the tuning component makes the approach sensitive and also not easy to interpret and require feature engineering to improve model fit.
+
++ **Random Forests (RF)**: is an ensemble machine learning algorithm that is used for both classification and regression. It is is based on building multiple CART algorithms and combining their predictions to produce a more robust, accurate and stable result than that obtained from a single tree. By using multiple tress,s RF reduces overfitting unlike that from a single Tree which can easily overfit. Since it pools results from multiple trees, the approach is less sensitive to noisy data. But this also means, it can be memory intensive and slower since they could be multiple trees during training and predictions.
+
+
++ **Bagging**: This method is also called Bootstrap aggregating similar to the RF idea. It is an ensemble learning technique that improves the accuracy and stability of machine learning models. It is also effective in decision trees and reduces overfitting and variance by training multiple versions of a model on different random subsets of the data and aggregating their predictions. It can also be computationally expensive due to the pooling of results from multiple models. 
+
+
+\
+
+## Classification Tree: Predicting Term Deposit
+We will now use classification tree to predict term deposit subscription following a campaign, then we will compare this model to the traditional logistic regression or our base model and compare the Classification Tree model predictive performance. We will pass a loss matrix to our tree model to handle classifications. This will be in addition to other hyper parameters for performance measures and splitting using the gini index. 
+
+We excluded duration in our model since ideally, we will not know if a customer will sign up or not since duration will only be available after contacting the customer and cannot be used to predict if a customer signs up or not. This will avoid over performance of the model since duration at prediction will not be known in future predictions.
+
+```{r, classbank}
+
+ library(rpart)        # For decision trees
+ library(rpart.plot)   # For visualizing trees
+ library(caret)        # For model evaluation
+ library(pROC)         # For ROC analysis
+
+#names(bank_orig)
+#data for RF classification - excluding duration
+class_data <-bank_updt[, c("y", "season", "balance_quantile", "age_quantile", "job", "marital", "education","contact", "poutcome","previous",
+                           "default", "pdays" , "day","campaign", "housing" , "loan")]
+#str(bank_orig)
+# Split data into training (70%) and test (30%) sets
+set.seed(778)
+train.index <- createDataPartition(class_data$y, p = 0.7, list = FALSE)
+train.data <- class_data[train.index, ]
+test.data <- class_data[-train.index, ]
+
+#making sure yes is first
+#levels(test.data$y)
+train.data$y <- factor(train.data$y, levels = c("yes", "no"))
+test.data$y <- factor(test.data$y, levels = c("yes", "no"))
+#levels(test.data$y)
+
+
+# Build the initial classification tree
+tree.model <- rpart(y ~ . , 
+                    data = train.data,
+                    method = "class",   # classification tree
+                    parms = list(split = "gini",  # Using Gini index
+                                 # FN cost = 1, FP cost = 0.5
+                                 loss = matrix(c(0, 0.5, 1, 0), nrow = 2)  
+                                 ),
+                    control = rpart.control(minsplit = 15,  # Min 15 obs to split
+                                           minbucket = 7,   # Min 7 obs in leaf
+                                           # Complexity parameter
+                                           cp = 0.001, # complex parameter
+                                           maxdepth = 5))   # Max tree depth
+
+rpart.plot(tree.model, 
+           extra = 104, # check the help document for more information
+           # color palette is a sequential color scheme that blends green (G) to blue (Bu)
+           box.palette = "GnBu",  
+           branch.lty = 1, 
+           shadow.col = "gray", 
+           nn = TRUE,
+           main = "Initial CART Model")
+
+```
+
+
+### Interpretation of the Initial CART Model
+
+The decision tree begins with the most significant variable: poutcome = success; which is the outcome of a previous marketing campaign. This split, immediately separates the population based on whether a customer had a successful prior interaction, indicating that past success in marketing efforts is the strongest predictor of subscription.The model suggests that prior marketing success, job type, season of contact, and client history (e.g., pdays, balance) are key drivers of subscription decisions. However, the complexity (using the number of splits or nodes) of the tree implies the need for pruning or cross-validation to avoid overfitting and ensure that the model performs well on unseen data. Next, we show the variable importance via a plot.
+
+```{r varimp, fig.cap="Variable Importance from Initial CART Model", fig.align="left", fig.width=8, fig.height=6}
+library(ggplot2)
+library(viridis)
+
+#variable importance
+#varImp(tree.model)
+
+# Extract importance
+importance <- as.data.frame(varImp(tree.model))
+
+# Add variable names as a column
+importance$Variable <- rownames(importance)
+
+# Rename for clarity
+colnames(importance)[1] <- "Importance"
+
+
+
+ggplot(importance, aes(x = reorder(Variable, Importance), y = Importance, fill = Variable)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  scale_fill_viridis_d(option = "plasma") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+top_vars <- importance %>% top_n(10, Importance)
+#top_vars
+```
+
+
+\
+**Figure \@ref(fig:varimp)** shows that prior campaign interactions (pdays, poutcome and previous) were the most influential predictors of term deposit subscription. Socioeconomic factors like job and contact also had moderate influence, while demographic variables such as education, marital status, and default showed limited predictive utility in this model.
+
+
+
+The initial tree based on the hyperparamters (minsplit, minbucket, cp and max depth) is shown above. Next we use post pruning on the original model via cross-validation to select an optimal complexity parameter (cp), that chooses the cp value that minimizes cross-validation error (xerror), or applying the 1-SE rule - selecting the largest cp where xerror ≤ (min xerror + 1 standard error) to balance model complexity and predictive performance. The complexity parameter(cp) penalizes the number of splits where a lower cp allows for more plots and a higher cp restricts not so useful complexity.
+
+
+
+```{r, results='hide'}
+
+# Print the complexity parameter table
+#pander(tree.model$cptable)
+library(knitr)
+library(kableExtra)
+
+# Extract the CP table
+cp_table <- as.data.frame(tree.model$cptable)
+
+#caption = "Table: Complexity Parameter Table for CART Model"
+# Display with title
+cp_tab <-kable(cp_table ) %>%
+  kable_styling(full_width = TRUE, position = "left")
+
+```
+
+```{r cptab}
+kable(as.data.frame(tree.model$cptable), caption = "Table 2: Complexity Parameter Table for CART Model")
+```
+
+As shown in Table **\@ref(tab:cptab)**, to choose the simplest tree that has low cross-validation error, we see that row = 2 of cp table below has the smallest split, with  minimum xerror = 0.4986. and xerror ≤ (min xerror + xstd at min xerror) threshold =  0.4986 + 0.02671 ≈ 0.5253. Thus this tree chooses the **simplest tree** (i.e., smallest `nsplit`) that meets that threshold with the **best cp at 0.0082 and 1 split**.  The first row might lead to under performance and further analysis may be necessary.
+
+
+```{r}
+plotcp(tree.model)
+```
+
+
+### Tree Pruning 
+
+From the cross validation complexity plot in choosing the best cp, we see that the minimum error is around cp ≈ 0.032  and only 2 splits which achieves an error within 1-SE of the minimum. Any other splitting increases the error at cp ≈ 0.0047 or 0.0024. Next we will prune the original model using the 1-SE rule.This pruned model is likely to generalize better and reduce overfitting.
+ 
+```{r pruned, fig.cap="Pruned CART model using minimum cross-validation error (CP = 0.0082). The tree identifies poutcome = success as the only significant split for predicting term deposit subscription.", fig.align="left", fig.width=6, fig.height=6} 
+# Use the CP value that minimizes cross-validated error
+best_cp <- tree.model$cptable[which.min(tree.model$cptable[,"xerror"]), "CP"]
+#best_cp #use exact value from tree.model$cptable
+
+pruned_tree <- prune(tree.model, cp = best_cp)
+rpart.plot(pruned_tree)
+```
+
+\
+The pruned CART model, selected based on the minimum cross-validated error (CP = 0.0082), results in a very simple tree with only one split. This decision rule uses the variable poutcome — the outcome of the previous marketing campaign — as the sole determinant in predicting whether a customer will subscribe to a term deposit. This implies that, if the previous outcome was success, the predicted probability of subscription is 33% (yes) and if the previous outcome was not success, the model predicts no subscription with a probability of 90%.
+
+Next, we will compare the model based on the 1-SE rule to min.cp model having the the lowest xerror.
+
+```{r}
+# Find the optimal cp value that minimizes cross-validated error
+min.cp <- tree.model$cptable[which.min(tree.model$cptable[,"xerror"]),"CP"]
+#min.cp
+# Prune the tree using the optimal cp
+pruned.tree.1SE <- prune(tree.model, cp = 0.032)  
+pruned.tree.min <- prune(tree.model, cp = min.cp)
+
+
+#manual 1-SE Rule Check
+#cp_table <- tree.model$cptable
+#min_xerror <- min(cp_table[,"xerror"])
+#se_1se <- min_xerror + cp_table[which.min(cp_table[,"xerror"]), "xstd"]
+
+# Get the smallest CP where xerror ≤ (min + 1SE)
+#cp_1se <- cp_table[which(cp_table[,"xerror"] <= se_1se)[1], "CP"]
+#cp_1se
+# Now prune
+#pruned.tree.1SE <- prune(tree.model, cp = cp_1se)
+
+
+# Set up plotting area for two side-by-side plots
+par(mfrow = c(1, 2))  # 1 row, 2 columns
+# Visualize the pruned tree based on 1SE
+plt_1SE<-rpart.plot(pruned.tree.1SE, 
+           extra = 104, # check the help document for more information
+           # color palette is a sequential color scheme that blends green (G) to blue (Bu)
+           box.palette = "GnBu",  
+           branch.lty = 1, 
+           shadow.col = "gray", 
+           nn = TRUE,
+            main = "Pruned CART Model using 1-SE")
+           
+# Visualize the pruned tree based on min CP
+plt_minCP<-rpart.plot(pruned.tree.min, 
+           extra = 104, # check the help document for more information
+           # color palette is a sequential color scheme that blends green (G) to blue (Bu)
+           box.palette = "GnBu",  
+           branch.lty = 1, 
+           shadow.col = "gray", 
+           nn = TRUE,
+            main = "Pruned CART Model using min CP")
+# Reset layout
+par(mfrow = c(1, 1))
+```
+ 
+ 
+From **Figure \@ref(fig:pruned)**, we see that both approaches seem identical simplified tree and indicate the only decision node to be the feature poutcome (Outcome of the previous marketing campaign = yes) is the most important predictor meaning whether a customer subscribed before is the strongest predictor of future subscription.
+However, the proportion of yes = 12% and no = 88% represents a class imbalance in the root node. In the left node (poutcome = success), proportion of yes = 67% and no = 33%. These are the customers likely to subscribe again thus prior positive experience yields increased trust. The right node (poutcome not equal to success: proportion of yes = 10% and proportion of no = 90%). This group was less likely to subscribe.Though the final pruned tree is simple, it is easy to interpret and may avoid overfitting since the pruned tree is based on cross-validation. The consistency in results in both strategies suggests that the additional splits in the original tree did not significantly improve model accuracy, and poutcome alone is a strong predictor.
+
+\
+
+## Bagging: Predicting Term Deposit
+In this section, we will explore the use of ensemble learning technique - Bagging. Bagging builds on a single decision tree (like CART which can be sensitive to small changes leading to over fitting). As a result, bagging uses multiple bootstrap samples from the training data to build a separate model on each sample and then aggregates predictions. In our dataset, where customer features such as job type, past campaign outcome, and financial status can vary widely, Bagging will help avoid overfitting and improve generalization to new customers.
+
+We will use expand.grid in R to a dataset of the hyperparameters to be tuned for bagging including the following: nbagg: Number of bootstrap samples (trees), control: Parameters for the base learner (rpart in this case), minsplit: Minimum number of observations in a node before splitting, maxdepth: Maximum depth of the tree and cp: Complexity parameter.
+
+```{r bag1}
+
+#incorporating BAGGING
+library(ipred) 
+library(pander)
+
+
+# Create a grid of hyperparameter combinations
+hyper.grid <- expand.grid(
+  nbagg = c(25, 50, 100),
+  minsplit = c(5, 10, 20),
+  maxdepth = c(5, 10, 20),
+  cp = c(0.01, 0.001)
+)
+# Initialize a results data frame
+results <- data.frame() # store values of tuned hyperparameters
+best.accuracy <- 0      # store accuracy
+best.params <- list()   # store best values of hyperparameter
+
+# Loop through each hyperparameter combination
+for(i in 1:nrow(hyper.grid)) {
+  # Get current hyperparameters
+  params <- hyper.grid[i, ]
+  
+  # Set rpart control parameters
+  rpart.control <- rpart.control(
+    minsplit = params$minsplit,
+    maxdepth = params$maxdepth,
+    cp = params$cp
+  )
+  
+  # Train bagging model
+  bag.model <- bagging(
+    y ~ .,
+    data = train.data,
+    nbagg = params$nbagg,
+    coob = TRUE,
+    control = rpart.control
+  )
+  
+  # Make predictions: default cut-off 0.5
+  preds <- predict(bag.model, newdata = test.data)
+  
+  # Calculate accuracy
+  cm <- confusionMatrix(preds, test.data$y)
+  accuracy <- cm$overall["Accuracy"]
+  
+  # Store results
+  results <- rbind(results, data.frame(
+    nbagg = params$nbagg,
+    minsplit = params$minsplit,
+    maxdepth = params$maxdepth,
+    cp = params$cp,
+    Accuracy = accuracy
+  ))
+  
+  # Update best parameters if current model is better
+  if(accuracy > best.accuracy) {
+    best.accuracy <- accuracy
+    best.params <- params
+  }
+  
+  # Print progress
+  #cat("Completed", i, "of", nrow(hyper.grid), "combinations\n")
+}
+#pander(best.params)
+
+pander(as.data.frame(best.params), caption = "Bagging: Best Hyperparameters Selected via Grid Search")
+
+```
+
+The best-performing model was obtained using `r best.params$nbagg` trees, a minimum split size of `r best.params$minsplit`, a maximum depth of `r best.params$maxdepth`, and a complexity parameter (cp) of `r best.params$cp`. These tuned hyperparameters will be used in the final bagging classification model in the next  step to get confusion matrix from which we will calculate performance measures.  
+
+```{r bag2}
+# Set rpart control with best parameters
+best.control <- rpart.control(
+  minsplit = best.params$minsplit,
+  maxdepth = best.params$maxdepth,
+  cp = best.params$cp
+)
+
+# Train final model
+final.bag.model <- bagging(
+  y ~ .,
+  data = train.data,
+  nbagg = best.params$nbagg,
+  coob = TRUE,
+  control = best.control
+)
+
+# Evaluate on test set
+final.preds <- predict(final.bag.model, newdata = test.data)
+final.cm <- confusionMatrix(final.preds, test.data$y)
+final.cm$table
+```
+
+\
+The above confusion matrix is from the Bagging classification used on the test data to predict term deposit with a a default cut-off probability. Next, we will use random forests to predict term deposit and then we will compare these approaches to the CART classification and base logistic regression model.
+
+\
+## Random Forest: Predicting Term Deposit
+To enhance the predictive performance and stability of our classification models, we incorporated a Random Forest algorithm into our analysis of client term deposit subscriptions. Random Forest builds on Bagging by introducing an additional layer of randomness — random feature selection at each split of each tree. And while CART and Bagging models are helpful, they are known to be sensitive to noise and may overfit if the dataset contains non-linear relationships. Given the variety of customer characteristics in our bank marketing data—such as age, job type, balance, and past contact outcomes, Random Forest offers a robust method to model interactions among variables and capture complex patterns without overfitting. It will also allow us to assess variable importance, highlighting the most influential features in predicting customer subscription.
+
+We will fit a random forest model using custom tuned hyperparameters via 5-fold cross-validation, such as the number of decision trees, maximum tree depth, and minimum samples required to split a node and evaluate different combinations of the hyperparameters in our bank dataset. Classification effectiveness will be based on ROC-AUC and confusion matrices. The hyperparameters will include - mtry: Number of variables randomly sampled as candidates at each split, ntree: Number of trees to grow, nodesize: Minimum size of terminal nodes, and maxnodes: Maximum number of terminal nodes trees can have. 
+
+
+```{r random1}
+library(randomForest)
+library(caret)
+library(pROC)
+
+
+data <- bank_updt[, c("y", "season", "balance_quantile", "age_quantile", "job", "marital", "education","contact", "poutcome","previous",
+                           "default", "pdays" , "day","campaign", "housing" , "loan")]
+
+set.seed(123)
+train.idx <- createDataPartition(data$y, p = 0.7, list = FALSE)
+train.datarf <- data[train.idx, ]
+test.datarf <- data[-train.idx, ]
+
+# cross-validation setting
+k = 5
+train.size <- dim(train.datarf)[1]  # training data size
+fold.size <- floor(train.size/k)  # fold size
+
+##
+tune.grid <- expand.grid(
+  mtry = c(2, 3, 4, 5),
+  ntree = c(100, 300, 500),
+  nodesize = c(1, 3, 5, 10),
+  maxnodes = c(5, 10, 20, NULL)
+)
+### store hyperparameters and avg of cv AUC
+results <- data.frame()
+best.auc <- 0.5         # place-holder of AUC, 0.5 = random guess
+best.hyp.params <- list()   # update the hyperparameter list according to the best auc
+
+##
+data$y <- factor(data$y, levels = c("no", "yes"))  # Make "yes" the positive class
+for (i in 1:nrow(tune.grid)){
+  current.tune.params <- tune.grid[i, ]  # subset of DATA FRAME!! 
+  cv.auc <- rep(0,k)
+  ##
+  for (j in 1:k){
+      cv.id <- (1 + (j-1)*fold.size):(j*fold.size)
+      cv.train <- train.datarf[-cv.id, ]
+      cv.valid <- train.datarf[cv.id, ]
+      ##
+       rf.cv <- randomForest(
+                   y ~ .,
+                   data = cv.train,
+                   mtry = current.tune.params$mtry,
+                   ntree = current.tune.params$ntree,
+                   nodesize = current.tune.params$nodesize,
+                   maxnodes = current.tune.params$maxnodes)
+       ##
+       prob.cv <- predict(rf.cv, cv.valid, type = "prob")[, "yes"]
+       cv.auc[j] <- auc(roc(cv.valid$y, prob.cv))
+      }
+      ##
+      # Average RMSE across folds
+      avg.auc <- mean(cv.auc)  
+      ##
+      # Store results: the data frame defined to store combinations of hyperparameters
+      # and the resulting mean RMSEs from cross-validation
+      results <- rbind(results, data.frame(
+                   mtry = current.tune.params$mtry,
+                   ntree = current.tune.params$ntree,
+                   nodesize = current.tune.params$nodesize,
+                   maxnodes = current.tune.params$maxnodes,
+                   auc = avg.auc))
+  
+     # Update best parameters if current model is better
+     if(avg.auc > best.auc) {
+           best.auc <- avg.auc
+           best.hyp.params <- current.tune.params }
+    
+}
+#pander(data.frame(cbind(best.hyp.params,best.auc)))    # resulting tuned hyperparameters
+
+pander(data.frame(cbind(best.hyp.params,best.auc)), caption = "Random Forest: Best Hyperparameters Selected via Grid Search")
+```
+
+Using a grid search and 5-fold cross-validation, we identified the optimal hyperparamters that yield the highest predictive performance for the RF model and the best combination was made up of mtry = 3: the model considered 3 randomly selected features at each split, ntree = 500 indicating 500 decision trees were grown, providing a stable ensemble estimate, nodesize = 10: each terminal node had a minimum of 10 observations and maxnodes = 20: trees were restricted to a maximum of 20 terminal nodes. This combination resulted in AUC of 0.6679 across the validation folds: a moderate ability to discriminate subscribers from non-subscribers. 
+
+
+
+Next, we train the final model on these parameters and evaluate the model. 
+
+```{r forest2}
+final.rf.cls <- randomForest(
+      y ~ .,
+      data = train.datarf,
+      ntree = best.hyp.params$ntree,
+      mtry = best.hyp.params$mtry,
+      nodesize = best.hyp.params$nodesize,
+      maxnodes = current.tune.params$maxnodes,
+      importance = TRUE
+     )
+
+test.pred <- predict(final.rf.cls, test.datarf)
+test.prob <- predict(final.rf.cls, test.datarf, type = "prob")
+rf.roc <- roc(test.datarf$y, test.prob[, "yes"])
+test.auc <- auc(rf.roc)
+#confusionMatrix(test.pred, test.data$diabetes)
+#test.auc
+```
+
+The Random Forest AUC from the tuned paramters = `r test.auc`.  The tuned Random Forest model achieved an AUC of 0.6944, indicating that the model has moderate ability to discriminate between clients who will subscribe to a term deposit and those who will not. Next, we see the mean decrease in accuracy -  The most important variables by this metric are poutcome, day, season, pdays, and previous and mean decrease in Gini  - poutcome and pdays again stand out as the top contributors.
+
+
+```{r forest3}
+# Variable Importance
+varImpPlot(final.rf.cls, pch = 19, main = "Variable Importance of RF Classification" )
+```
+
+The variable importance plot confirms that poutcome (previous campaign outcome) and pdays (days since last contact) are the strongest predictors of term deposit subscription. These variables rank highest across both accuracy-based and Gini-based importance measures. Meanwhile, variables such as education, loan, and default show minimal contribution to the model’s predictive power and may be be less informative.
+
+
+## Global Performance with ROC
+Next, we will evaluate the global performance of the predictive performance of these models in our analysis. We employed Receiver Operating Characteristic (ROC) curves and the Area Under the Curve (AUC) metrics since they provide a comprehensive assessment of model ability to classify the target using trade-off between sensitivity (true positive rate) and specificity (true negative rate) across all possible classification thresholds. ROC is used since it is useful when comparing different classification models and also unaffected by class imbalance. 
+
+We will compare the performance of logistic regression and pruned CART models (both 1-SE and minimum CP), Bagging and Random Forest using their respective ROC curves and AUC values to determine which model most effectively distinguishes between customers who subscribed to a term deposit and those who did not.
+ 
+ 
+```{r predictions, fig.cap="ROC and ACU comparaison of Pruned Initial CART Models, Bagging and Random Forest with Logistic regression", fig.align="left", fig.width=8, fig.height=6}
+ # Make predictions on the test set
+pred.label.1SE <- predict(pruned.tree.1SE, test.data, type = "class") # default cutoff 0.5
+pred.prob.1SE <- predict(pruned.tree.1SE, test.data, type = "prob")[,2]
+##
+pred.label.min <- predict(pruned.tree.min, test.data, type = "class") # default cutoff 0.5
+pred.prob.min <- predict(pruned.tree.min, test.data, type = "prob")[,2]
+
+
+# For Bagging
+pred.prob.bag <- predict(final.bag.model, newdata = test.data, type = "prob")[, 2]
+
+
+# For Random Forest
+pred.prob.rf <- predict(final.rf.cls, newdata = test.data, type = "prob")[, 2]
+
+
+
+
+# Confusion matrix
+conf_matrix_mincp <- confusionMatrix(pred.label.min, test.data$y, positive = "yes")
+conf_matrix_1se<-confusionMatrix(pred.label.1SE, test.data$y, positive = "yes")
+
+
+
+
+########################
+###  logistic regression
+#names(train.data)
+
+logit.fit <- glm(y ~ ., data = train.data, family = binomial)
+AIC.logit <- step(logit.fit, direction = "both", trace = 0)
+pred.logit <- predict(AIC.logit, test.data, type = "response")
+
+# ROC curve and AUC
+roc.tree.1SE <- roc(test.data$y, pred.prob.1SE)
+roc.tree.min <- roc(test.data$y, pred.prob.min)
+roc.logit <- roc(test.data$y, pred.logit)
+
+roc.bag <- roc(test.data$y, pred.prob.bag)
+roc.rf <- roc(test.data$y, pred.prob.rf)
+##
+### Sen-Spe
+tree.1SE.sen <- roc.tree.1SE$sensitivities
+tree.1SE.spe <- roc.tree.1SE$specificities
+#
+tree.min.sen <- roc.tree.min$sensitivities
+tree.min.spe <- roc.tree.min$specificities
+#
+logit.sen <- roc.logit$sensitivities
+logit.spe <- roc.logit$specificities
+
+
+bag.sen <- roc.bag$sensitivities
+bag.spe <- roc.bag$specificities
+
+rf.sen <- roc.rf$sensitivities
+rf.spe <- roc.rf$specificities
+
+
+
+## AUC
+auc.tree.1SE <- roc.tree.1SE$auc
+auc.tree.min <- roc.tree.min$auc
+auc.logit <- roc.logit$auc
+auc.bag <- roc.bag$auc
+auc.rf <- roc.rf$auc
+
+
+### comment:command+shift+C
+# plot(1-logit.spe, logit.sen,  
+#      xlab = "1 - specificity",
+#      ylab = "sensitivity",
+#      col = "darkred",
+#      type = "l",
+#      lty = 1,
+#      lwd = 2,
+#      main = "ROC: CART and Logistic Regressopm")
+# lines(1-tree.1SE.spe, tree.1SE.sen, 
+#       col = "blue",
+#       lty = 1,
+#       lwd = 2)
+# lines(1-tree.min.spe, tree.min.sen,      
+#       col = "orange",
+#       lty = 2,
+#       lwd = 2)
+# 
+# # Add Bagging
+# lines(1 - bag.spe, bag.sen, col = "forestgreen", lty = 3, lwd = 2)
+# # Add Random Forest
+# lines(1 - rf.spe, rf.sen, col = "purple", lty = 4, lwd = 2)
+# 
+# abline(0,1, col = "skyblue3", lty = 2, lwd = 2)
+# legend("bottomright", c("Logistic", "Tree 1SE", "Tree Min", "Bagging", "Random Forest"),
+#        lty = c(1,1,1), lwd = rep(1,3),
+#        col = c("red", "blue", "orange", "forestgreen", "purple"),
+#        bty="n",cex = 0.8)
+# ## annotation - AUC
+# text(0.8, 0.46, paste("Logistic AUC: ", round(auc.logit,4)), cex = 0.8)
+# text(0.8, 0.4, paste("Tree 1SE AUC: ", round(auc.tree.1SE,4)), cex = 0.8)
+# text(0.8, 0.34, paste("Tree Min AUC: ", round(auc.tree.min,4)), cex = 0.8)
+# 
+# text(0.8, 0.30, paste("Bagging AUC: ", round(auc.bag,4)), cex = 0.8)
+# text(0.8, 0.25, paste("Random Forest AUC: ", round(auc.rf,4)), cex = 0.8)
+
+
+
+# Set up ROC plot
+plot(1 - rf.spe, rf.sen,  
+     type = "l", lwd = 2, lty = 1, col = "purple",
+     xlab = "1 - Specificity", ylab = "Sensitivity",
+     main = "ROC Curve: CART, Logistic Regression, Bagging, and Random Forest")
+
+# Add other models
+lines(1 - logit.spe, logit.sen, col = "darkred", lwd = 2, lty = 2)   # Logistic
+lines(1 - tree.1SE.spe, tree.1SE.sen, col = "blue", lwd = 2, lty = 3)   # Tree 1SE
+lines(1 - tree.min.spe, tree.min.sen, col = "orange", lwd = 2, lty = 4) # Tree Min
+lines(1 - bag.spe, bag.sen, col = "forestgreen", lwd = 2, lty = 5)     # Bagging
+
+# Add diagonal reference line
+abline(0, 1, col = "grey", lty = 2)
+
+# Add legend
+legend("bottomright",
+       legend = c(
+         paste0("Random Forest (AUC = ", round(auc.rf, 3), ")"),
+         paste0("Logistic Regression (AUC = ", round(auc.logit, 3), ")"),
+         paste0("Tree 1SE (AUC = ", round(auc.tree.1SE, 3), ")"),
+         paste0("Tree Min (AUC = ", round(auc.tree.min, 3), ")"),
+         paste0("Bagging (AUC = ", round(auc.bag, 3), ")")
+       ),
+       col = c("purple", "darkred", "blue", "orange", "forestgreen"),
+       lwd = 2, lty = 1:5, cex = 0.8, bty = "n")
+
+
+```
+
+
+**Figure \@ref(fig:predictions)** shows five models: Logistic Regression, CART Tree pruned at 1-SE, and CART Tree pruned at minimum CP—compare, Bagging and Random Forest in terms of their ability to distinguish between customers who do and do not subscribe to term deposits. 
+
+### Logistic Regresson versus CART Models via ROC Curve
+The Logistic Regression (AUC = 0.6973) performs better than both tree-based models, with the ROC curve bending away from the diagonal indicating moderate discriminating ability. This means the model does a reasonable job distinguishing between yes and no cases.
+Both pruned tree models (1-SE and min CP) have identical AUC values of 0.5698, indicating that they perform only slightly better but with their curves so close to the diagonal line, they have limited predictive power.
+The logistic model performs better overall because it does a better job of correctly identifying both subscribers and non-subscribers at different decision points, compared to the decision tree models and has better global predictive power.
+
+
+### Overall Performance Comparison via ROC Curve
+The ROC curve above ( **Figure \@ref(fig:predictions)**) shows a comparative assessment of five classification models—Logistic Regression, CART (1-SE and min CP), Bagging, and Random Forest—used to predict customer subscription to term deposits in the bank dataset. The performance of each model is measured by its Area Under the Curve (AUC):
+
++ Random Forest achieved the highest AUC (0.7026), indicating the best overall discriminatory ability among all models.
++ Logistic Regression followed closely with an AUC of 0.6973, suggesting a strong performance thought it is simple and has linearity limitation.
++ Bagging achieved a moderate AUC (0.5828), outperforming both CART models, but did not out perform Random Forest or Logistic Regression.
++ CART (1-SE and min CP) performed similarly, both yielding an AUC of 0.5698, reflecting relatively weaker predictive power.
+
+Ensemble methods like Random Forest and Bagging enhanced predictive accuracy, with Random Forest showing the greatest improvement, possibly due to its ability to reduce variance and model complex interactions.
+
+The Logistic model remained a competitive benchmark given its interpretability and lower computational cost.The CART models, though interpretable, underperformed, in a way showing the benefit of model complexity and ensemble learning for this classification. The analysis has highlighted the strength of ensemble models, particularly Random Forest, in handling nonlinear patterns and class imbalance present in real-world financial data.
+
+It is also important to note that between the logistic regression and the random forest, it seems no single model dominates across all classification thresholds as they cross at some points. At some thresholds (lower thresholds), Logistic Regression is more sensitive (correctly identifies more positives) with fewer false positives than Random Forest. But overall, Random Forest is better when you consider all thresholds together; explaining why Random Forest still has higher AUC. Since we used 5-fold cross validation to select the best AUC in the random forest, model, it is possible data imbalance, random variation, etc, may be likely explnanation for the crossing.
+
+
+
+
+##  Optimal Cut-off Probability
+In classification models, predictions are typically based on estimated probabilities with a default threshold of 0.5 used to assign classified groups. However, relying on this default threshold may not produce the best results especially in situations where the classes are imbalanced or when the consequences of misclassifying one class are more severe than the other.
+
+To address this, we will determine an optimal cut-off probability ( threshold that minimizes a custom misclassification cost function or maximizes model performance metrics (accuracy, sensitivity, specificity, or cost-efficiency). 
+We will use Youden's Index for maximizing balanced sensitivity and specificity, and also, a Cost-Based threshold that prioritized minimizing financial loss from misclassifications. These optimal cutoffs should then be applied to the test set to evaluate each model under practical and balanced conditions but this will be outside the scope of this work.
+
+We calculate and visualize the optimal threshold that best distinguishes subscribers from non-subscribers in the bank marketing dataset via the Youden and cost function approaches. 
+
+
+```{r optimalcut, fig.cap="Optimal Cutoff Thresholds for Each Model", fig.align="left", fig.width=8, fig.height=6}
+
+library(pROC)
+
+# Predict probabilities for each model
+pred.prob.logit <- predict(AIC.logit, train.data, type = "response")
+pred.prob.1SE   <- predict(pruned.tree.1SE, train.data, type = "prob")[, 2]
+pred.prob.min   <- predict(pruned.tree.min, train.data, type = "prob")[, 2]
+pred.prob.bag   <- predict(final.bag.model, newdata = train.data, type = "prob")[, 2]
+pred.prob.rf    <- predict(final.rf.cls, newdata = train.data, type = "prob")[, 2]
+
+#Cost-Based Function: 
+find_cost_based_cutoff <- function(prob, true_labels, cost_fp = 5, cost_fn = 20, grid_points = 1000) {
+  cutoff_seq <- seq(0, 1, length.out = grid_points)
+  cost <- numeric(length(cutoff_seq))
+  
+  for (i in seq_along(cutoff_seq)) {
+    pred_label <- ifelse(prob > cutoff_seq[i], "yes", "no")
+    FN <- sum(pred_label == "no" & true_labels == "yes", na.rm = TRUE)
+    FP <- sum(pred_label == "yes" & true_labels == "no", na.rm = TRUE)
+    cost[i] <- cost_fp * FP + cost_fn * FN
+  }
+  
+  optimal_cutoff <- cutoff_seq[which.min(cost)]
+  return(optimal_cutoff)
+}
+
+#youden function
+find_youden_cutoff <- function(prob, true_labels) {
+  roc_obj <- roc(true_labels, prob)
+  youden_idx <- roc_obj$sensitivities + roc_obj$specificities - 1
+  best_idx <- which.max(youden_idx)
+  optimal_cutoff <- roc_obj$thresholds[best_idx]
+  return(optimal_cutoff)
+}
+
+
+#apply function to models
+# Cost-Based Optimal Cutoffs
+cost_cutoff_logit <- find_cost_based_cutoff(pred.prob.logit, train.data$y)
+cost_cutoff_1SE   <- find_cost_based_cutoff(pred.prob.1SE,   train.data$y)
+cost_cutoff_min   <- find_cost_based_cutoff(pred.prob.min,   train.data$y)
+cost_cutoff_bag   <- find_cost_based_cutoff(pred.prob.bag,   train.data$y)
+cost_cutoff_rf    <- find_cost_based_cutoff(pred.prob.rf,    train.data$y)
+
+# Youden's Index Optimal Cutoffs
+youden_cutoff_logit <- find_youden_cutoff(pred.prob.logit, train.data$y)
+youden_cutoff_1SE   <- find_youden_cutoff(pred.prob.1SE,   train.data$y)
+youden_cutoff_min   <- find_youden_cutoff(pred.prob.min,   train.data$y)
+youden_cutoff_bag   <- find_youden_cutoff(pred.prob.bag,   train.data$y)
+youden_cutoff_rf    <- find_youden_cutoff(pred.prob.rf,    train.data$y)
+
+
+library(knitr)
+
+cutoff_summary <- data.frame(
+  Model = c("Logistic Regression", "Tree 1SE", "Tree MinCP", "Bagging", "Random Forest"),
+  Cost_Based_Cutoff = round(c(cost_cutoff_logit, cost_cutoff_1SE, cost_cutoff_min, cost_cutoff_bag, cost_cutoff_rf), 4),
+  Youden_Cutoff = round(c(youden_cutoff_logit, youden_cutoff_1SE, youden_cutoff_min, youden_cutoff_bag, youden_cutoff_rf), 4)
+)
+
+kable(cutoff_summary, caption = "Optimal Cutoff Thresholds for Each Model")
+
+
+#plot cut offs
+# Reshape to long format
+cutoff_long <- pivot_longer(cutoff_summary, 
+                             cols = c(Cost_Based_Cutoff, Youden_Cutoff),
+                             names_to = "CutoffType",
+                             values_to = "CutoffValue")
+
+# Plot
+ggplot(cutoff_long, aes(x = Model, y = CutoffValue, fill = CutoffType)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  coord_flip() +
+  scale_fill_manual(values = c("Cost_Based_Cutoff" = "lightblue", "Youden_Cutoff" = "lightgreen")) +
+  labs(
+    title = "Comparison of Optimal Cutoffs Across Models",
+    x = "Model",
+    y = "Optimal Cutoff Value",
+    fill = "Cutoff Type"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+# plot distribuiotn of probablitlities used to determine optimal cut off values in a histogram
+
+# # 1. Create a dataframe with predicted probabilities from all models
+# predicted_probs_df <- data.frame(
+#   Logistic = pred.prob.logit,     # Logistic Regression
+#   Tree_1SE = pred.prob.1SE,        # Tree pruned by 1-SE
+#   Tree_MinCP = pred.prob.min,      # Tree pruned by minimum CP
+#   Bagging = pred.prob.bag,         # Bagging model
+#   RandomForest = pred.prob.rf      # Random Forest model
+# )
+# 
+# # 2. Reshape into long format for ggplot
+# predicted_probs_long <- predicted_probs_df %>%
+#   pivot_longer(cols = everything(), 
+#                names_to = "Model", 
+#                values_to = "Predicted_Probability")
+# 
+# # 3. Plot
+# ggplot(predicted_probs_long, aes(x = Predicted_Probability, fill = Model)) +
+#   geom_histogram(position = "identity", alpha = 0.5, bins = 30) +
+#   scale_fill_brewer(palette = "Set1") +
+#   theme_minimal(base_size = 13) +
+#   labs(
+#     title = "Distribution of Predicted Probabilities Across Models",
+#     subtitle = "Comparison: Logistic, CART Trees, Bagging, and Random Forest",
+#     x = "Predicted Probability",
+#     y = "Count",
+#     fill = "Model"
+#   ) +
+#   theme(plot.title = element_text(hjust = 0.5),
+#         plot.subtitle = element_text(hjust = 0.5))
+# 
+# ggplot(predicted_probs_long, aes(x = Predicted_Probability, fill = Model)) +
+#   geom_histogram(alpha = 0.7, bins = 30, color = "black") +
+#   facet_wrap(~Model, scales = "free") +
+#   theme_minimal(base_size = 13) +
+#   labs(
+#     title = "Predicted Probability Distributions by Model",
+#     x = "Predicted Probability",
+#     y = "Count"
+#   )
+
+
+```
+
+\
+
+From the **Figure \@ref(fig:optimalcut)**, we see that the Random Forest behaves differently. It has very low cutoff under cost-based = 0.012 and Youden = ~0.001, indicating the Random Forest model classifies almost everyone as positive unless probability is almost zero. It also indicates a high bias toward the "yes" class or that probabilities are skewed toward lower values. With the exception of the Random Forest, all other models show a pattern where Cost-Based Cutoff > Youden Cutoff .
+
+
+
+
+# Discussion
+
+ In our analysis, we investigated factors influencing client subscription to term deposits using machine learning models including CART decision trees (with pruning), logistic regression, bagging, and random forests. We compared the models' performance using ROC curves, AUC values, and optimal classification thresholds determined using Youden’s index and cost-based functions for the practical bank data solutions.
+
+The analysis showed that though logistic regression produced a strong AUC, both random forest and bagging approaches were superior in performance in balancing sensitivity and specificity. Specifically, the random forest model achieved the highest AUC via cross-validation tuning. It demonstrated, the benefit of ensemble methods in handling non-linear relationships and variable interactions.
+
+Cutoff analysis showed that the cost-based optimal thresholds were often much higher (closer to 1.0) than the default 0.5. This showed that the models did better at higher probabilities while the Youden’s index provided lower thresholds for a balance in trade-off between false positives and false negatives. The choice between these thresholds should depend on the organization’s operational priorities and constraints however. In the bank business strategy, the cost approach may be better but if the goal is to identify as many potential subscribers as possible, then the Youden threshold may be more effective. Our evaluation highlights the importance of going beyond default thresholds (such as 0.5) and selecting decision rules that align with business goals. These obtained optimal cut-off should be used to predtict on test data but this beyond the current analysis.
+
+The analysis also showed that important predictors like poutcome, season, previous contact history, and campaign interactions significantly influenced subscription probability. This seems to align in practice; past engagement behaviors affect future decision-making.
+
+Overall, ensemble models such as bagging and random forests captured more complex data patterns, while CART and logistic regression provided more interpretable.
+
+
+\
+ 
+
+# Limitations
+In the presence of the insights obtained, there are several limitations as well that should be noted. First, the target variable showed skewness toward non-subscribers which may bias the models toward the larger class even with tuning. Optimal cutoffs may be sensitive to cost functions and Youden's index. There was data noise where feature variable balance showed skewness that could impact model stability even with transformation. Feature engineering options  may also influence model behavior. And finally, whilw random forests performed well, their interpretability is limited compared to single decision trees or logistic regression.
+
+
+
+```{r gridcp, results="hide"}
+
+
+#The tuned tree at optimal complexity parameter  = `r tree.tuned$bestTune `  appears too simple though the feature (poutcome) is logically a strong predictor since a past campaign that was successful is a likely a strong predictor but this model may also be underfitted. The model predicts 'yes' with a probablity of 67% and 'no' with a probability of 90%. 
+tune.grid <- expand.grid(cp = seq(0.001, 0.05, by = 0.005))
+
+train.control <- trainControl(method = "cv", number = 5)
+
+tree.tuned <- train(y ~ ., data = train.data,
+                    method = "rpart",
+                    trControl = train.control,
+                    tuneGrid = tune.grid,
+                    parms = list(split = "gini"),
+                    metric = "Accuracy")  # Or "Kappa", or custom metric
+
+print(tree.tuned$bestTune)
+
+#rpart.plot(tree.tuned$finalModel, type = 2, extra = 104,
+           #fallen.leaves = TRUE, main = "Optimized CART Model")
+
+
+```
+
